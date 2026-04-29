@@ -79,7 +79,18 @@ gh issue create --title "タイトル" --body "概要" --label "feature"
 
 Issue 番号を必ず控える。以降のブランチ名・コミット・PR すべてに使用する。
 
-### 2. ブランチ命名規則
+### 2. 実装開始前に必ず Issue 対応ブランチを切る
+
+Issue を作成したら、コードを一行も書く前に必ずブランチを作成する。
+ブランチなしで `main` 上に直接コミットしてはならない。
+
+```bash
+git switch main
+git pull origin main
+git switch -c feature/#<Issue番号>-<機能名>
+```
+
+### 3. ブランチ命名規則
 
 必ず `main` から派生させ、以下の形式で命名する:
 
@@ -102,13 +113,13 @@ git pull origin main
 git switch -c feature/#1-add-auth
 ```
 
-### 3. `main` への直接プッシュ禁止
+### 4. `main` への直接プッシュ禁止
 
 `git push origin main` は絶対に実行しない。
 `git push --force` / `git push -f` も禁止。
 必ずブランチを作成し、Pull Request 経由でマージする。
 
-### 4. コミットメッセージ規則（Conventional Commits）
+### 5. コミットメッセージ規則（Conventional Commits）
 
 形式: `<type>(<scope>): <概要（日本語）>`
 
@@ -135,7 +146,7 @@ docs(readme): セットアップ手順を更新
 chore(ci): GitHub Actions バックエンドCIを追加
 ```
 
-### 5. ポート競合時の対処ルール
+### 6. ポート競合時の対処ルール
 
 | サーバー | ポート | 確認・停止コマンド |
 |----------|--------|-------------------|
@@ -144,7 +155,7 @@ chore(ci): GitHub Actions バックエンドCIを追加
 
 別ポートでの起動は禁止（Next.js rewrites 設定が崩れる）。
 
-### 6. Pull Request のルール
+### 7. Pull Request のルール
 
 - PR タイトル: コミットメッセージと同じ形式
 - PR 本文: 必ず `Closes #<Issue番号>` または `Fixes #<Issue番号>` を含める
