@@ -47,10 +47,16 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	authService := service.NewAuthService(userRepo, jwtSecret)
 
+	personalityRepo := repository.NewPersonalityRepository(db)
+	personalitySvc := service.NewPersonalityService(personalityRepo)
+	if err := personalitySvc.SeedIfEmpty(); err != nil {
+		log.Fatalf("failed to seed personality questions: %v", err)
+	}
+
 	authHandler := handler.NewAuthHandler(authService)
-	personalityHandler := handler.NewPersonalityHandler()
+	personalityHandler := handler.NewPersonalityHandler(personalitySvc)
 	decisionHandler := handler.NewDecisionHandler()
-	userHandler := handler.NewUserHandler()
+	userHandler := handler.NewUserHandler(userRepo)
 	statsHandler := handler.NewStatsHandler()
 
 	e := echo.New()
