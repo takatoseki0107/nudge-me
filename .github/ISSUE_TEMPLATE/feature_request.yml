@@ -1,0 +1,60 @@
+name: 機能追加リクエスト
+description: 新しい機能や改善を提案する
+title: "feat: "
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        新機能の提案をありがとうございます。実装前に要件を整理してください。
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 機能の概要
+      description: どんな機能を追加したいかを一言で説明してください。
+      placeholder: "例: AIキャラクターにツンデレタイプを追加する"
+    validations:
+      required: true
+
+  - type: textarea
+    id: background
+    attributes:
+      label: 背景・目的
+      description: なぜこの機能が必要か、どんな問題を解決するかを説明してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 受け入れ条件（完了の定義）
+      description: この Issue が「完了」と見なされる条件を箇条書きで記入してください。
+      value: |
+        - [ ]
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: dropdown
+    id: layer
+    attributes:
+      label: 影響するレイヤー
+      multiple: true
+      options:
+        - frontend
+        - backend
+        - database
+        - docs
+        - ci/cd
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 補足・設計メモ
+      description: 実装のヒント、参考資料、注意点があれば記入してください。
+    validations:
+      required: false

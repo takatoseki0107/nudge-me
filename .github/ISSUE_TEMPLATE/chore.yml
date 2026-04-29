@@ -1,0 +1,49 @@
+name: タスク・作業（Chore）
+description: リファクタリング、設定変更、ドキュメント更新など
+title: "chore: "
+labels: ["chore"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        機能追加でもバグ修正でもない作業（環境構築、設定変更、ドキュメント整備等）に使用します。
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: 作業種別
+      options:
+        - リファクタリング
+        - ドキュメント更新
+        - 依存パッケージ更新
+        - CI/CD設定
+        - 環境構築・設定
+        - その他
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 作業内容
+      description: 何をするのか具体的に説明してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: 実施理由
+      description: なぜこの作業が必要かを説明してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: checklist
+    attributes:
+      label: 作業チェックリスト
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: false

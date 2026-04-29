@@ -1,0 +1,65 @@
+name: バグ報告
+description: 不具合・エラーを報告する
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        バグを報告してくれてありがとうございます。できるだけ詳しく記入してください。
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 不具合の内容
+      description: 何が起きているかを説明してください。
+      placeholder: "例: AIに決断を依頼するボタンを押しても、結果画面に遷移しない。"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: 不具合を再現するための手順を記入してください。
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待される動作
+      description: 本来どう動くべきかを説明してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の動作
+      description: 実際に起きていることを説明してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 環境
+      value: |
+        - OS:
+        - ブラウザ / Go バージョン:
+        - 関連レイヤー: frontend / backend / db
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: その他（スクリーンショット・ログ等）
+      description: エラーメッセージ、スクリーンショット、ログがあれば貼り付けてください。
+    validations:
+      required: false
