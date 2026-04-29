@@ -1,0 +1,33 @@
+package handler
+
+import (
+	"net/http"
+
+	"github.com/labstack/echo/v4"
+	"github.com/takatoseki0107/nudge-me/backend/internal/repository"
+)
+
+type UserHandler struct {
+	userRepo *repository.UserRepository
+}
+
+func NewUserHandler(userRepo *repository.UserRepository) *UserHandler {
+	return &UserHandler{userRepo: userRepo}
+}
+
+func (h *UserHandler) GetMe(c echo.Context) error {
+	userID := c.Get("userID").(uint)
+	user, err := h.userRepo.FindByID(userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "user not found")
+	}
+	return c.JSON(http.StatusOK, user)
+}
+
+func (h *UserHandler) UpdateCharacter(c echo.Context) error {
+	return c.JSON(http.StatusNotImplemented, map[string]string{"message": "not implemented"})
+}
+
+func (h *UserHandler) UpdatePersonality(c echo.Context) error {
+	return c.JSON(http.StatusNotImplemented, map[string]string{"message": "not implemented"})
+}

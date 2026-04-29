@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { login, saveToken } from "@/lib/auth";
+import { getMe } from "@/lib/user";
 import { Suspense } from "react";
 
 function LoginForm() {
@@ -24,7 +25,8 @@ function LoginForm() {
     try {
       const { token } = await login(email, password);
       saveToken(token);
-      router.push("/dashboard");
+      const user = await getMe();
+      router.push(user.personality_type ? "/dashboard" : "/quiz");
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data
