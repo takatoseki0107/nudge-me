@@ -6,23 +6,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// AuthHandler handles authentication endpoints
-type AuthHandler struct{}
-
-func NewAuthHandler() *AuthHandler { return &AuthHandler{} }
-
-func (h *AuthHandler) Register(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"message": "not implemented"})
-}
-
-func (h *AuthHandler) Login(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"message": "not implemented"})
-}
-
-func (h *AuthHandler) Logout(c echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]string{"message": "logged out"})
-}
-
 // PersonalityHandler handles personality quiz endpoints
 type PersonalityHandler struct{}
 

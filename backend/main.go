@@ -13,6 +13,8 @@ import (
 	"github.com/takatoseki0107/nudge-me/backend/internal/handler"
 	custommiddleware "github.com/takatoseki0107/nudge-me/backend/internal/middleware"
 	"github.com/takatoseki0107/nudge-me/backend/internal/model"
+	"github.com/takatoseki0107/nudge-me/backend/internal/repository"
+	"github.com/takatoseki0107/nudge-me/backend/internal/service"
 )
 
 func main() {
@@ -42,7 +44,10 @@ func main() {
 
 	jwtSecret := getEnv("JWT_SECRET", "change-me")
 
-	authHandler := handler.NewAuthHandler()
+	userRepo := repository.NewUserRepository(db)
+	authService := service.NewAuthService(userRepo, jwtSecret)
+
+	authHandler := handler.NewAuthHandler(authService)
 	personalityHandler := handler.NewPersonalityHandler()
 	decisionHandler := handler.NewDecisionHandler()
 	userHandler := handler.NewUserHandler()
