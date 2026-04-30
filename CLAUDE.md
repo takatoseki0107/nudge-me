@@ -201,6 +201,33 @@ npm run dev
 
 ---
 
+## 本番デプロイ手順
+
+### バックエンド（クロスコンパイル → SCP転送）
+
+ローカルマシンで実行:
+
+```bash
+cd backend
+GOOS=linux GOARCH=amd64 go build -o nudge-me-server main.go
+scp -i ~/.ssh/takatoseki.pem nudge-me-server ubuntu@52.193.6.70:/opt/nudge-me/backend/nudge-me-server
+ssh -i ~/.ssh/takatoseki.pem ubuntu@52.193.6.70 "sudo systemctl restart nudge-me-backend"
+```
+
+### フロントエンド（EC2上でビルド）
+
+EC2上で実行:
+
+```bash
+cd /opt/nudge-me/frontend
+git pull origin main
+npm install
+npm run build
+sudo systemctl restart nudge-me-frontend
+```
+
+---
+
 ## やってはいけないこと（禁止事項）
 
 - `git push origin main` — 直接プッシュ禁止
