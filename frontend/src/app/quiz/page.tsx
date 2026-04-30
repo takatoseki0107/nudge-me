@@ -6,14 +6,13 @@ import { getQuestions, saveResult } from "@/lib/personality";
 import { getToken } from "@/lib/auth";
 import type { PersonalityQuestion, PersonalityType } from "@/types";
 
-const PERSONALITY_LABELS: Record<PersonalityType, string> = {
-  analytical: "分析タイプ",
-  spontaneous: "直感タイプ",
-  empathetic: "共感タイプ",
-  competitive: "競争タイプ",
+const PERSONALITY_LABELS: Record<PersonalityType, { label: string; desc: string; emoji: string }> = {
+  analytical:  { label: "分析タイプ",  desc: "データと論理で最適解を導くあなたに、根拠あるナッジを届けます。", emoji: "🔍" },
+  spontaneous: { label: "直感タイプ",  desc: "直感を大切にするあなたに、シンプルで背中を押すナッジを届けます。", emoji: "⚡" },
+  empathetic:  { label: "共感タイプ",  desc: "感情を大切にするあなたに、寄り添いながら一緒に考えるナッジを届けます。", emoji: "💜" },
+  competitive: { label: "競争タイプ",  desc: "成長と結果を追うあなたに、前へ進む力強いナッジを届けます。", emoji: "🏆" },
 };
 
-// Options are stored as "テキスト（type）" — extract the type keyword inside ().
 function extractType(option: string): PersonalityType {
   const match = option.match(/（(\w+)）$/);
   return (match?.[1] ?? "analytical") as PersonalityType;
@@ -30,10 +29,7 @@ export default function QuizPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!getToken()) {
-      router.push("/login");
-      return;
-    }
+    if (!getToken()) { router.push("/login"); return; }
     getQuestions()
       .then((qs) => {
         setQuestions(qs);
@@ -48,9 +44,8 @@ export default function QuizPage() {
     const next = [...answers];
     next[current] = type;
     setAnswers(next);
-
     if (current < questions.length - 1) {
-      setCurrent((c) => c + 1);
+      setTimeout(() => setCurrent((c) => c + 1), 200);
     }
   }
 
@@ -59,9 +54,7 @@ export default function QuizPage() {
     setSubmitting(true);
     setError("");
     try {
-      const { personality_type } = await saveResult(
-        answers as PersonalityType[]
-      );
+      const { personality_type } = await saveResult(answers as PersonalityType[]);
       setResult(personality_type);
     } catch {
       setError("診断結果の保存に失敗しました");
@@ -72,28 +65,29 @@ export default function QuizPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">読み込み中...</p>
+      <main className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-violet-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-purple-300 border-t-purple-600 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-gray-500 text-sm">読み込み中...</p>
+        </div>
       </main>
     );
   }
 
   if (result) {
+    const r = PERSONALITY_LABELS[result];
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow p-8 text-center">
-          <p className="text-sm text-gray-500 mb-2">あなたの性格タイプ</p>
-          <h2 className="text-3xl font-bold text-blue-600 mb-4">
-            {PERSONALITY_LABELS[result]}
-          </h2>
-          <p className="text-gray-600 mb-8">
-            診断が完了しました。あなたに合ったナッジでサポートします！
-          </p>
+      <main className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-violet-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-purple-100 p-8 text-center">
+          <div className="text-5xl mb-4">{r.emoji}</div>
+          <p className="text-xs font-semibold text-purple-500 uppercase tracking-widest mb-2">診断結果</p>
+          <h2 className="text-3xl font-extrabold text-purple-700 mb-3">{r.label}</h2>
+          <p className="text-gray-600 text-sm leading-relaxed mb-8">{r.desc}</p>
           <button
-            onClick={() => router.push("/")}
-            className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+            onClick={() => router.push("/dashboard")}
+            className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors shadow-md shadow-purple-200"
           >
-            はじめる
+            はじめる →
           </button>
         </div>
       </main>
@@ -103,82 +97,90 @@ export default function QuizPage() {
   const q = questions[current];
   const answered = answers.filter((a) => a !== null).length;
   const allAnswered = answered === questions.length;
+  const progress = ((answered) / questions.length) * 100;
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow p-8">
-        <div className="mb-6">
-          <div className="flex justify-between text-sm text-gray-500 mb-2">
-            <span>性格診断</span>
-            <span>
-              {answered} / {questions.length}
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all"
-              style={{ width: `${(answered / questions.length) * 100}%` }}
-            />
-          </div>
+    <main className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-violet-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-lg">
+        {/* ヘッダー */}
+        <div className="text-center mb-6">
+          <span className="text-xl font-extrabold text-purple-700 tracking-tight">NudgeMe</span>
+          <p className="text-sm text-gray-500 mt-0.5">性格診断</p>
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
-            {error}
+        <div className="bg-white rounded-2xl shadow-sm border border-purple-100 p-8">
+          {/* プログレス */}
+          <div className="mb-6">
+            <div className="flex justify-between text-xs text-gray-400 mb-2">
+              <span>Q{current + 1} / {questions.length}</span>
+              <span>{answered} 問回答済み</span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-2">
+              <div
+                className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
-        )}
 
-        <h2 className="text-lg font-semibold text-gray-800 mb-6">
-          Q{current + 1}. {q.question}
-        </h2>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm">
+              {error}
+            </div>
+          )}
 
-        <div className="space-y-3 mb-8">
-          {q.options.map((option) => {
-            const type = extractType(option);
-            const label = option.replace(/（\w+）$/, "").trim();
-            const selected = answers[current] === type;
-            return (
+          <h2 className="text-lg font-bold text-gray-800 mb-5 leading-snug">
+            {q.question}
+          </h2>
+
+          <div className="space-y-3 mb-6">
+            {q.options.map((option) => {
+              const type = extractType(option);
+              const label = option.replace(/（\w+）$/, "").trim();
+              const selected = answers[current] === type;
+              return (
+                <button
+                  key={option}
+                  onClick={() => handleSelect(option)}
+                  className={`w-full text-left px-4 py-3.5 rounded-xl border-2 text-sm font-medium transition-all ${
+                    selected
+                      ? "border-purple-500 bg-purple-50 text-purple-700"
+                      : "border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 text-gray-700"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex gap-3">
+            {current > 0 && (
               <button
-                key={option}
-                onClick={() => handleSelect(option)}
-                className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
-                  selected
-                    ? "border-blue-500 bg-blue-50 text-blue-700"
-                    : "border-gray-200 hover:border-blue-300 text-gray-700"
-                }`}
+                onClick={() => setCurrent((c) => c - 1)}
+                className="px-5 py-2.5 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 text-sm font-medium transition-colors"
               >
-                {label}
+                ← 前へ
               </button>
-            );
-          })}
-        </div>
-
-        <div className="flex gap-3">
-          {current > 0 && (
-            <button
-              onClick={() => setCurrent((c) => c - 1)}
-              className="flex-1 py-2 px-4 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              前へ
-            </button>
-          )}
-          {current < questions.length - 1 ? (
-            <button
-              onClick={() => setCurrent((c) => c + 1)}
-              disabled={answers[current] === null}
-              className="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold rounded-lg transition-colors"
-            >
-              次へ
-            </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={!allAnswered || submitting}
-              className="flex-1 py-2 px-4 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-semibold rounded-lg transition-colors"
-            >
-              {submitting ? "診断中..." : "診断結果を見る"}
-            </button>
-          )}
+            )}
+            {current < questions.length - 1 ? (
+              <button
+                onClick={() => setCurrent((c) => c + 1)}
+                disabled={answers[current] === null}
+                className="flex-1 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold rounded-xl transition-colors text-sm"
+              >
+                次へ →
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                disabled={!allAnswered || submitting}
+                className="flex-1 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold rounded-xl transition-colors text-sm"
+              >
+                {submitting ? "診断中..." : "診断結果を見る"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </main>
