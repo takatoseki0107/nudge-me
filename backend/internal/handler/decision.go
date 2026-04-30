@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -38,6 +39,7 @@ func (h *DecisionHandler) Create(c echo.Context) error {
 
 	decision, err := h.svc.Create(userID, req.Question, req.Options, req.Character)
 	if err != nil {
+		log.Printf("ERROR Create decision: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create decision")
 	}
 	return c.JSON(http.StatusCreated, decision)
