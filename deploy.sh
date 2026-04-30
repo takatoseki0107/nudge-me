@@ -33,7 +33,7 @@ log "バックエンドビルド完了"
 # ──────────────────────────────────────────
 log "フロントエンドをビルドしています..."
 cd "$FRONTEND_DIR"
-npm ci --omit=dev
+npm ci
 
 NEXT_PUBLIC_API_URL="http://localhost:8080" npm run build
 
