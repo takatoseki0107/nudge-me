@@ -1,5 +1,23 @@
 # インフラ構成 — NudgeMe
 
+## EC2 インスタンス情報
+
+| 項目 | 値 |
+|------|-----|
+| インスタンスID | i-0ea38ff687cb35cfc |
+| パブリックIP | 52.193.6.70 |
+| リージョン | ap-northeast-1 (東京) |
+| セキュリティグループ | sg-0e4f96e34e3c7c62b (nudge-me-sg) |
+| キーペア | takatoseki |
+
+SSH接続:
+
+```bash
+ssh -i ~/.ssh/takatoseki.pem ubuntu@52.193.6.70
+```
+
+---
+
 ## 構成図
 
 ```
@@ -8,8 +26,8 @@
     │ HTTP:80 / HTTPS:443 / SSH:22
     ▼
 ┌────────────────────────────────────────────┐
-│  AWS EC2 (t2.micro / Amazon Linux 2023)    │
-│  ap-northeast-1 (東京)                     │
+│  AWS EC2 (t2.micro)  ap-northeast-1 (東京) │
+│  Ubuntu 22.04 LTS                          │
 │                                            │
 │  Nginx :80 / :443                          │
 │    ├── /           → Next.js :3000         │
@@ -26,67 +44,56 @@
 
 ## EC2 インスタンス起動手順
 
-### 1. インスタンス作成
-
-AWS コンソールまたは CLI で以下の設定でインスタンスを起動する。
+### 1. インスタンス設定
 
 | 項目 | 値 |
 |------|-----|
-| AMI | Amazon Linux 2023 (最新) |
-| インスタンスタイプ | t2.micro (無料枠) |
+| AMI | Ubuntu 22.04 LTS |
+| インスタンスタイプ | t2.micro（無料枠） |
 | ストレージ | 20GB gp3 |
-| セキュリティグループ | SSH(22), HTTP(80), HTTPS(443) をインバウンド許可 |
+| セキュリティグループ | SSH(22), HTTP(80), HTTPS(443) |
 | キーペア | 任意の名前で作成・保存 |
 
 ### 2. EC2 初期セットアップ
 
 ```bash
 # SSHで接続
-ssh -i ~/.ssh/your-key.pem ec2-user@<EC2_PUBLIC_IP>
+ssh -i ~/.ssh/your-key.pem ubuntu@<EC2_PUBLIC_IP>
 
 # パッケージ更新
-sudo dnf update -y
+sudo apt update && sudo apt upgrade -y
 
 # Git インストール
-sudo dnf install -y git
+sudo apt install -y git
 
 # アプリディレクトリ作成
 sudo mkdir -p /opt/nudge-me/data
-sudo chown ec2-user:ec2-user /opt/nudge-me
+sudo chown ubuntu:ubuntu /opt/nudge-me
 ```
 
 ### 3. Go のインストール
 
 ```bash
-# Go 1.22 インストール
 wget https://go.dev/dl/go1.22.5.linux-amd64.tar.gz
 sudo tar -C /usr/local -xzf go1.22.5.linux-amd64.tar.gz
 rm go1.22.5.linux-amd64.tar.gz
-
-# PATHに追加
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
 source ~/.bashrc
-
-# 確認
 go version
 ```
 
 ### 4. Node.js のインストール
 
 ```bash
-# Node.js 20.x インストール
-curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
-sudo dnf install -y nodejs
-
-# 確認
-node -v
-npm -v
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+node -v && npm -v
 ```
 
 ### 5. Nginx のインストール
 
 ```bash
-sudo dnf install -y nginx
+sudo apt install -y nginx
 sudo systemctl enable nginx
 sudo systemctl start nginx
 ```
@@ -102,10 +109,8 @@ git clone https://github.com/takatoseki0107/nudge-me.git .
 
 ```bash
 cp /opt/nudge-me/backend/.env.example /opt/nudge-me/backend/.env
-vi /opt/nudge-me/backend/.env
+nano /opt/nudge-me/backend/.env
 ```
-
-`.env` に以下を設定する（`.env.example` 参照）:
 
 | 変数名 | 説明 |
 |--------|------|
@@ -127,14 +132,13 @@ chmod +x deploy.sh
 
 ## Nginx 設定
 
-`/etc/nginx/conf.d/nudge-me.conf`:
+`/etc/nginx/sites-available/nudge-me`:
 
 ```nginx
 server {
     listen 80;
     server_name _;
 
-    # Next.js フロントエンド
     location / {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
@@ -146,7 +150,6 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 
-    # Go バックエンド API
     location /api/v1/ {
         proxy_pass http://localhost:8080;
         proxy_http_version 1.1;
@@ -155,6 +158,14 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 }
+```
+
+有効化:
+
+```bash
+sudo ln -sf /etc/nginx/sites-available/nudge-me /etc/nginx/sites-enabled/nudge-me
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
 ---
@@ -170,7 +181,7 @@ After=network.target
 
 [Service]
 Type=simple
-User=ec2-user
+User=ubuntu
 WorkingDirectory=/opt/nudge-me/backend
 EnvironmentFile=/opt/nudge-me/backend/.env
 ExecStart=/opt/nudge-me/backend/nudge-me-server
@@ -192,7 +203,7 @@ After=network.target nudge-me-backend.service
 
 [Service]
 Type=simple
-User=ec2-user
+User=ubuntu
 WorkingDirectory=/opt/nudge-me/frontend
 Environment=NODE_ENV=production
 Environment=PORT=3000
@@ -218,10 +229,10 @@ sudo journalctl -u nudge-me-frontend -f
 
 ## HTTPS 対応 (Let's Encrypt)
 
-ドメインを取得後、Certbot で SSL 証明書を取得する。
+ドメイン取得後:
 
 ```bash
-sudo dnf install -y certbot python3-certbot-nginx
+sudo apt install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d your-domain.com
 sudo systemctl reload nginx
 ```
@@ -231,8 +242,7 @@ sudo systemctl reload nginx
 ## SQLite バックアップ
 
 ```bash
-# crontab に追加 (毎日 3:00 AM)
-crontab -e
+# crontab -e で追加（毎日 3:00 AM）
 0 3 * * * aws s3 cp /opt/nudge-me/data/nudge.db s3://your-bucket/backups/nudge-$(date +\%Y\%m\%d).db
 ```
 
@@ -250,7 +260,5 @@ sudo systemctl status nudge-me-backend
 sudo systemctl status nudge-me-frontend
 
 # コードの更新・再デプロイ
-cd /opt/nudge-me
-git pull origin main
-./deploy.sh
+cd /opt/nudge-me && ./deploy.sh
 ```

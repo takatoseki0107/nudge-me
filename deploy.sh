@@ -1,5 +1,5 @@
 #!/bin/bash
-# NudgeMe デプロイスクリプト
+# NudgeMe デプロイスクリプト (Ubuntu 22.04 LTS)
 # 使い方: ./deploy.sh
 # 前提: /opt/nudge-me に git clone 済み、/opt/nudge-me/backend/.env 設定済み
 
@@ -9,6 +9,7 @@ APP_DIR="/opt/nudge-me"
 BACKEND_DIR="$APP_DIR/backend"
 FRONTEND_DIR="$APP_DIR/frontend"
 DATA_DIR="$APP_DIR/data"
+APP_USER="ubuntu"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 
@@ -47,10 +48,10 @@ log "フロントエンドビルド完了"
 mkdir -p "$DATA_DIR"
 
 # ──────────────────────────────────────────
-# 5. Nginx 設定
+# 5. Nginx 設定 (Ubuntu: sites-available/sites-enabled)
 # ──────────────────────────────────────────
 log "Nginx を設定しています..."
-sudo tee /etc/nginx/conf.d/nudge-me.conf > /dev/null <<'NGINX'
+sudo tee /etc/nginx/sites-available/nudge-me > /dev/null <<'NGINX'
 server {
     listen 80;
     server_name _;
@@ -76,6 +77,8 @@ server {
 }
 NGINX
 
+sudo ln -sf /etc/nginx/sites-available/nudge-me /etc/nginx/sites-enabled/nudge-me
+sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl reload nginx
 log "Nginx 設定完了"
@@ -92,7 +95,7 @@ After=network.target
 
 [Service]
 Type=simple
-User=ec2-user
+User=$APP_USER
 WorkingDirectory=$BACKEND_DIR
 EnvironmentFile=$BACKEND_DIR/.env
 ExecStart=$BACKEND_DIR/nudge-me-server
@@ -112,7 +115,7 @@ After=network.target nudge-me-backend.service
 
 [Service]
 Type=simple
-User=ec2-user
+User=$APP_USER
 WorkingDirectory=$FRONTEND_DIR
 Environment=NODE_ENV=production
 Environment=PORT=3000
