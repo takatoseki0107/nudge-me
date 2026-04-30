@@ -138,6 +138,8 @@ cd /opt/nudge-me/frontend
 git pull origin main
 npm install
 npm run build
+# standaloneモードでは静的ファイルを手動コピーする必要がある
+cp -r .next/static .next/standalone/.next/static
 sudo systemctl restart nudge-me-frontend
 ```
 
@@ -279,5 +281,5 @@ scp -i ~/.ssh/takatoseki.pem nudge-me-server ubuntu@52.193.6.70:/opt/nudge-me/ba
 ssh -i ~/.ssh/takatoseki.pem ubuntu@52.193.6.70 "sudo systemctl restart nudge-me-backend"
 
 # フロントエンド更新（EC2上で）
-cd /opt/nudge-me/frontend && git pull origin main && npm install && npm run build && sudo systemctl restart nudge-me-frontend
+cd /opt/nudge-me/frontend && git pull origin main && npm install && npm run build && cp -r .next/static .next/standalone/.next/static && sudo systemctl restart nudge-me-frontend
 ```

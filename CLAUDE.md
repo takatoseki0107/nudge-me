@@ -223,6 +223,8 @@ cd /opt/nudge-me/frontend
 git pull origin main
 npm install
 npm run build
+# standaloneモードでは静的ファイルを手動コピーする必要がある
+cp -r .next/static .next/standalone/.next/static
 sudo systemctl restart nudge-me-frontend
 ```
 
