@@ -60,7 +60,7 @@ func main() {
 	personalityHandler := handler.NewPersonalityHandler(personalitySvc)
 	decisionHandler := handler.NewDecisionHandler(decisionSvc)
 	userHandler := handler.NewUserHandler(userRepo)
-	statsHandler := handler.NewStatsHandler()
+	statsHandler := handler.NewStatsHandler(decisionRepo)
 
 	e := echo.New()
 	e.Use(middleware.Logger())

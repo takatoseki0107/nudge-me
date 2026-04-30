@@ -3,15 +3,50 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getToken } from "@/lib/auth";
-import { getDecision } from "@/lib/decision";
+import { getDecision, updateRegret, getOptionStats } from "@/lib/decision";
 import { getMe } from "@/lib/user";
 import type { Decision, AICharacter } from "@/types";
+import type { OptionStatsResponse } from "@/lib/decision";
 
 const CHARACTER_META: Record<string, { emoji: string; label: string; color: string }> = {
   harsh:  { emoji: "😈", label: "毒舌キャラ",     color: "text-red-600" },
   kind:   { emoji: "🌸", label: "優しいキャラ",   color: "text-pink-600" },
   sporty: { emoji: "🔥", label: "体育会系キャラ", color: "text-orange-500" },
 };
+
+function buildShareText(decision: Decision): string {
+  const reason = decision.ai_reason.slice(0, 50);
+  const suffix = decision.ai_reason.length > 50 ? "..." : "";
+  const text = `「${decision.question}」でNudgeMeに相談したら「${decision.ai_choice}」を勧められた！${reason}${suffix} #NudgeMe`;
+  return text.slice(0, 140);
+}
+
+function StatBar({ stats, total }: { stats: OptionStatsResponse; total: number }) {
+  if (total === 0) {
+    return (
+      <div className="text-xs text-gray-400 text-center py-2">まだ他のユーザーのデータがありません</div>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      {stats.stats.map((s) => (
+        <div key={s.option}>
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-gray-700 font-medium truncate max-w-[70%]">{s.option}</span>
+            <span className="text-gray-400 shrink-0">{s.count}人 ({s.percent.toFixed(0)}%)</span>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-2">
+            <div
+              className="bg-purple-400 h-2 rounded-full transition-all duration-500"
+              style={{ width: `${s.percent}%` }}
+            />
+          </div>
+        </div>
+      ))}
+      <p className="text-xs text-gray-400 text-right">合計 {total} 件の決断</p>
+    </div>
+  );
+}
 
 export default function DecisionResultPage() {
   const router = useRouter();
@@ -20,14 +55,39 @@ export default function DecisionResultPage() {
   const [character, setCharacter] = useState<AICharacter>("kind");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [stats, setStats] = useState<OptionStatsResponse | null>(null);
+  const [regretUpdating, setRegretUpdating] = useState(false);
 
   useEffect(() => {
     if (!getToken()) { router.push("/login"); return; }
     Promise.all([getDecision(Number(id)), getMe()])
-      .then(([d, u]) => { setDecision(d); setCharacter(u.ai_character); })
+      .then(([d, u]) => {
+        setDecision(d);
+        setCharacter(u.ai_character);
+        return getOptionStats(d.question, d.options);
+      })
+      .then((s) => setStats(s))
       .catch(() => setError("結果の取得に失敗しました"))
       .finally(() => setLoading(false));
   }, [id, router]);
+
+  async function handleRegret(regret: boolean) {
+    if (!decision) return;
+    setRegretUpdating(true);
+    try {
+      const updated = await updateRegret(decision.id, regret);
+      setDecision(updated);
+    } finally {
+      setRegretUpdating(false);
+    }
+  }
+
+  function handleShare() {
+    if (!decision) return;
+    const text = buildShareText(decision);
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
 
   if (loading) {
     return (
@@ -107,6 +167,48 @@ export default function DecisionResultPage() {
           <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">{decision.ai_reason}</p>
         </div>
 
+        {/* みんなの統計 */}
+        {stats && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">みんなはどっちを選んだ？</p>
+            <StatBar stats={stats} total={stats.total} />
+          </div>
+        )}
+
+        {/* 後悔フィードバック */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">この決断どうだった？</p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => handleRegret(false)}
+              disabled={regretUpdating}
+              className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all ${
+                decision.regret === false
+                  ? "bg-green-500 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600"
+              }`}
+            >
+              ✓ 後悔なし
+            </button>
+            <button
+              onClick={() => handleRegret(true)}
+              disabled={regretUpdating}
+              className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all ${
+                decision.regret === true
+                  ? "bg-red-500 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600"
+              }`}
+            >
+              😔 後悔した
+            </button>
+          </div>
+          {decision.regret !== null && (
+            <p className="text-xs text-gray-400 text-center mt-2">
+              {decision.regret ? "後悔したとフィードバック済み" : "後悔なしとフィードバック済み"}（変更可）
+            </p>
+          )}
+        </div>
+
         {/* アクション */}
         <div className="flex gap-3">
           <button
@@ -114,6 +216,13 @@ export default function DecisionResultPage() {
             className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors shadow-md shadow-purple-100 text-sm"
           >
             別の悩みを相談する
+          </button>
+          <button
+            onClick={handleShare}
+            className="px-5 py-3.5 border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-500 font-semibold rounded-xl transition-colors text-sm"
+            title="Xでシェア"
+          >
+            𝕏
           </button>
           <button
             onClick={() => router.push("/history")}

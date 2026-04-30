@@ -35,3 +35,22 @@ export async function updateRegret(id: number, regret: boolean): Promise<Decisio
 export async function updateCharacter(character: AICharacter): Promise<void> {
   await api.patch("/users/me/character", { character });
 }
+
+export interface OptionStat {
+  option: string;
+  count: number;
+  percent: number;
+}
+
+export interface OptionStatsResponse {
+  total: number;
+  stats: OptionStat[];
+}
+
+export async function getOptionStats(question: string, options: string[]): Promise<OptionStatsResponse> {
+  const params = new URLSearchParams();
+  params.append("question", question);
+  options.forEach((o) => params.append("options[]", o));
+  const res = await api.get<OptionStatsResponse>(`/stats/options?${params.toString()}`);
+  return res.data;
+}

@@ -44,3 +44,27 @@ func (r *DecisionRepository) UpdateRegret(id, userID uint, regret bool) error {
 	}
 	return nil
 }
+
+func (r *DecisionRepository) CountByOption(question string, options []string) (map[string]int, error) {
+	type row struct {
+		AIChoice string
+		Count    int
+	}
+	var rows []row
+	err := r.db.Model(&model.Decision{}).
+		Select("ai_choice, count(*) as count").
+		Where("question = ? AND ai_choice IN ?", question, options).
+		Group("ai_choice").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	counts := make(map[string]int, len(options))
+	for _, o := range options {
+		counts[o] = 0
+	}
+	for _, row := range rows {
+		counts[row.AIChoice] = row.Count
+	}
+	return counts, nil
+}
