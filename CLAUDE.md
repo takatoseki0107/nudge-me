@@ -198,6 +198,7 @@ npm run dev
 | `DB_PATH` | 任意 | SQLiteファイルパス（デフォルト: ./nudge.db） | `./nudge.db` |
 | `ANTHROPIC_API_KEY` | 必須 | Claude APIキー | `sk-ant-...` |
 | `FRONTEND_URL` | 必須 | フロントエンドURL（CORS用） | `http://localhost:3000` |
+| `NEXT_PUBLIC_API_URL` | 必須（本番） | フロントエンドからのAPIベースURL | `http://localhost:8080` |
 
 ---
 

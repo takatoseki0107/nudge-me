@@ -39,6 +39,19 @@
 { "token": "eyJ...", "user": { "id": 1, "email": "user@example.com", ... } }
 ```
 
+#### POST /api/v1/auth/logout
+```json
+// Request
+// Authorization: Bearer <token>
+// Body: なし
+
+// Response 200
+{ "message": "ログアウトしました" }
+
+// Response 401（トークンなし or 無効）
+{ "message": "認証エラー" }
+```
+
 ---
 
 ### 性格診断（要認証）
