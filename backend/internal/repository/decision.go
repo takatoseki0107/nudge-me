@@ -31,3 +31,16 @@ func (r *DecisionRepository) FindByIDAndUserID(id, userID uint) (*model.Decision
 	}
 	return &d, nil
 }
+
+func (r *DecisionRepository) UpdateRegret(id, userID uint, regret bool) error {
+	result := r.db.Model(&model.Decision{}).
+		Where("id = ? AND user_id = ?", id, userID).
+		Update("regret", regret)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}

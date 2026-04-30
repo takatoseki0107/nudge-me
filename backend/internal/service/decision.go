@@ -96,6 +96,13 @@ func (s *DecisionService) Get(id, userID uint) (*model.Decision, error) {
 	return s.repo.FindByIDAndUserID(id, userID)
 }
 
+func (s *DecisionService) UpdateRegret(id, userID uint, regret bool) (*model.Decision, error) {
+	if err := s.repo.UpdateRegret(id, userID, regret); err != nil {
+		return nil, err
+	}
+	return s.repo.FindByIDAndUserID(id, userID)
+}
+
 func (s *DecisionService) callClaude(question string, options []string, character, personalityType string) (string, string, error) {
 	systemPrompt := buildSystemPrompt(character, personalityType)
 	userMsg := buildUserMessage(question, options)
