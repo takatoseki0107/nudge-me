@@ -57,8 +57,13 @@ export default function DashboardPage() {
         ? await createRandomDecision({ question: question.trim(), options: filled })
         : await createDecision({ question: question.trim(), options: filled, character });
       router.push(`/decisions/${decision.id}`);
-    } catch {
-      setError("AIの判断中にエラーが発生しました。しばらくしてから再試行してください。");
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 503) {
+        setError("AIサービスが一時的に利用できません。しばらくしてから再試行してください。");
+      } else {
+        setError("AIの判断中にエラーが発生しました。しばらくしてから再試行してください。");
+      }
     } finally {
       setLoading(false);
     }

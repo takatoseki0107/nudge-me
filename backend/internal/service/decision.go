@@ -118,6 +118,10 @@ func (s *DecisionService) callClaude(question string, options []string, characte
 		},
 	})
 	if err != nil {
+		errStr := err.Error()
+		if strings.Contains(errStr, "credit balance is too low") {
+			return "", "", fmt.Errorf("api_credit_exhausted: %w", err)
+		}
 		return "", "", fmt.Errorf("claude api error: %w", err)
 	}
 
