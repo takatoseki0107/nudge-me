@@ -25,7 +25,28 @@ func (h *UserHandler) GetMe(c echo.Context) error {
 }
 
 func (h *UserHandler) UpdateCharacter(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"message": "not implemented"})
+	userID := c.Get("userID").(uint)
+
+	var req struct {
+		Character string `json:"character"`
+	}
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+	allowed := map[string]bool{"harsh": true, "kind": true, "sporty": true}
+	if !allowed[req.Character] {
+		return echo.NewHTTPError(http.StatusBadRequest, "character must be harsh, kind, or sporty")
+	}
+
+	if err := h.userRepo.UpdateCharacter(userID, req.Character); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update character")
+	}
+
+	user, err := h.userRepo.FindByID(userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch user")
+	}
+	return c.JSON(http.StatusOK, user)
 }
 
 func (h *UserHandler) UpdatePersonality(c echo.Context) error {

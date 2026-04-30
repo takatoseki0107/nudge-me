@@ -53,9 +53,12 @@ func main() {
 		log.Fatalf("failed to seed personality questions: %v", err)
 	}
 
+	decisionRepo := repository.NewDecisionRepository(db)
+	decisionSvc := service.NewDecisionService(decisionRepo, userRepo, getEnv("ANTHROPIC_API_KEY", ""))
+
 	authHandler := handler.NewAuthHandler(authService)
 	personalityHandler := handler.NewPersonalityHandler(personalitySvc)
-	decisionHandler := handler.NewDecisionHandler()
+	decisionHandler := handler.NewDecisionHandler(decisionSvc)
 	userHandler := handler.NewUserHandler(userRepo)
 	statsHandler := handler.NewStatsHandler()
 

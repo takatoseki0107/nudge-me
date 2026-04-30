@@ -32,3 +32,8 @@ func (r *UserRepository) FindByID(id uint) (*model.User, error) {
 	}
 	return &user, nil
 }
+
+func (r *UserRepository) UpdateCharacter(userID uint, character string) error {
+	return r.db.Model(&model.User{}).Where("id = ?", userID).
+		Update("ai_character", character).Error
+}
