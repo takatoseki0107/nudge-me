@@ -9,7 +9,7 @@ import { createDecision, createRandomDecision, updateCharacter } from "@/lib/dec
 import type { AICharacter, User } from "@/types";
 
 const CHARACTERS: { value: AICharacter; label: string; emoji: string; desc: string }[] = [
-  { value: "harsh",  label: "毒舌",     emoji: "😈", desc: "ズバッと本音で押す" },
+  { value: "sarcastic",  label: "毒舌",     emoji: "😈", desc: "ズバッと本音で押す" },
   { value: "kind",   label: "優しい",   emoji: "🌸", desc: "温かく寄り添う" },
   { value: "sporty", label: "体育会系", emoji: "🔥", desc: "熱血全力で決める" },
 ];
