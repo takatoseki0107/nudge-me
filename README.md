@@ -98,9 +98,32 @@ npm run dev
 
 ---
 
+## 本番環境
+
+**URL:** http://52.193.6.70
+
+| ページ | URL |
+|--------|-----|
+| ランディング | http://52.193.6.70/ |
+| 新規登録 | http://52.193.6.70/register |
+| ログイン | http://52.193.6.70/login |
+| ダッシュボード | http://52.193.6.70/dashboard |
+| 決断履歴 | http://52.193.6.70/history |
+
+---
+
 ## スクリーンショット
 
-*（Coming soon）*
+### ランディングページ
+![ランディングページ](docs/screenshots/landing.png)
+
+### ダッシュボード（AI決断）
+![ダッシュボード](docs/screenshots/dashboard.png)
+
+### 決断履歴
+![決断履歴](docs/screenshots/history.png)
+
+> スクリーンショットは `docs/screenshots/` に配置してください。
 
 ---
 
