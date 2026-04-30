@@ -25,7 +25,7 @@ git pull origin main
 # ──────────────────────────────────────────
 log "バックエンドをビルドしています..."
 cd "$BACKEND_DIR"
-go build -o nudge-me-server .
+CGO_ENABLED=0 go build -o nudge-me-server .
 log "バックエンドビルド完了"
 
 # ──────────────────────────────────────────
