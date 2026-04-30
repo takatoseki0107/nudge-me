@@ -117,13 +117,11 @@ npm run dev
 ### ランディングページ
 ![ランディングページ](docs/screenshots/landing.png)
 
-### ダッシュボード（AI決断）
+### ダッシュボード
 ![ダッシュボード](docs/screenshots/dashboard.png)
 
-### 決断履歴
-![決断履歴](docs/screenshots/history.png)
-
-> スクリーンショットは `docs/screenshots/` に配置してください。
+### AI決定結果
+![AI決定結果](docs/screenshots/result.png)
 
 ---
 
