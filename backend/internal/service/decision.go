@@ -143,7 +143,7 @@ func (s *DecisionService) callClaude(question string, options []string, characte
 func buildSystemPrompt(character, personalityType string) string {
 	var style string
 	switch character {
-	case "harsh":
+	case "sarcastic":
 		style = "あなたは毒舌キャラクターです。ズバッと核心をついて、遠慮なく背中を押してください。ただし最終的には相手のためになるアドバイスをしてください。"
 	case "sporty":
 		style = "あなたは体育会系キャラクターです。熱血で前向き、「やってみろ！」という勢いで背中を押してください。テンションは高めで励ましてください。"
