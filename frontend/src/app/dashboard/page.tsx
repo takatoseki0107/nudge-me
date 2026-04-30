@@ -86,6 +86,12 @@ export default function DashboardPage() {
         <div className="flex items-center gap-4">
           {user && <span className="text-sm text-gray-500">{user.email}</span>}
           <button
+            onClick={() => router.push("/history")}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            履歴
+          </button>
+          <button
             onClick={() => { clearToken(); router.push("/login"); }}
             className="text-sm text-gray-500 hover:text-gray-700"
           >

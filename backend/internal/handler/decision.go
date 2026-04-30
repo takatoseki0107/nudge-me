@@ -87,6 +87,25 @@ func (h *DecisionHandler) Get(c echo.Context) error {
 	return c.JSON(http.StatusOK, decision)
 }
 
+type updateRegretRequest struct {
+	Regret bool `json:"regret"`
+}
+
 func (h *DecisionHandler) UpdateRegret(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"message": "not implemented"})
+	userID := c.Get("userID").(uint)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+
+	var req updateRegretRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+
+	decision, err := h.svc.UpdateRegret(uint(id), userID, req.Regret)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "decision not found")
+	}
+	return c.JSON(http.StatusOK, decision)
 }

@@ -27,6 +27,11 @@ export async function getDecision(id: number): Promise<Decision> {
   return res.data;
 }
 
+export async function updateRegret(id: number, regret: boolean): Promise<Decision> {
+  const res = await api.patch<Decision>(`/decisions/${id}/regret`, { regret });
+  return res.data;
+}
+
 export async function updateCharacter(character: AICharacter): Promise<void> {
   await api.patch("/users/me/character", { character });
 }
