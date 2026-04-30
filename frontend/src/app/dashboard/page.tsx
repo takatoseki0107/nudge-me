@@ -79,6 +79,9 @@ export default function DashboardPage() {
           <Link href="/history" className="text-sm text-gray-500 hover:text-purple-600 font-medium transition-colors">
             履歴
           </Link>
+          <Link href="/profile" className="text-sm text-gray-500 hover:text-purple-600 font-medium transition-colors">
+            プロフィール
+          </Link>
           <button
             onClick={() => { clearToken(); router.push("/login"); }}
             className="text-sm text-gray-400 hover:text-gray-600 transition-colors"

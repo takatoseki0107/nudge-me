@@ -50,5 +50,26 @@ func (h *UserHandler) UpdateCharacter(c echo.Context) error {
 }
 
 func (h *UserHandler) UpdatePersonality(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, map[string]string{"message": "not implemented"})
+	userID := c.Get("userID").(uint)
+
+	var req struct {
+		PersonalityType string `json:"personality_type"`
+	}
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+	allowed := map[string]bool{"analytical": true, "spontaneous": true, "empathetic": true, "competitive": true}
+	if !allowed[req.PersonalityType] {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid personality_type")
+	}
+
+	if err := h.userRepo.UpdatePersonality(userID, req.PersonalityType); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update personality")
+	}
+
+	user, err := h.userRepo.FindByID(userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch user")
+	}
+	return c.JSON(http.StatusOK, user)
 }
