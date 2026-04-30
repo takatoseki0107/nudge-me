@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getQuestions, saveResult } from "@/lib/personality";
+import { updatePersonality } from "@/lib/user";
 import { getToken } from "@/lib/auth";
 import type { PersonalityQuestion, PersonalityType } from "@/types";
 
@@ -20,6 +21,9 @@ function extractType(option: string): PersonalityType {
 
 export default function QuizPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isRetake = searchParams.get("mode") === "retake";
+
   const [questions, setQuestions] = useState<PersonalityQuestion[]>([]);
   const [answers, setAnswers] = useState<(PersonalityType | null)[]>([]);
   const [current, setCurrent] = useState(0);
@@ -54,7 +58,16 @@ export default function QuizPage() {
     setSubmitting(true);
     setError("");
     try {
-      const { personality_type } = await saveResult(answers as PersonalityType[]);
+      let personality_type: PersonalityType;
+      if (isRetake) {
+        const counts: Record<PersonalityType, number> = { analytical: 0, spontaneous: 0, empathetic: 0, competitive: 0 };
+        (answers as PersonalityType[]).forEach((a) => { counts[a]++; });
+        personality_type = (Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]) as PersonalityType;
+        await updatePersonality(personality_type);
+      } else {
+        const res = await saveResult(answers as PersonalityType[]);
+        personality_type = res.personality_type;
+      }
       setResult(personality_type);
     } catch {
       setError("診断結果の保存に失敗しました");
@@ -84,10 +97,10 @@ export default function QuizPage() {
           <h2 className="text-3xl font-extrabold text-purple-700 mb-3">{r.label}</h2>
           <p className="text-gray-600 text-sm leading-relaxed mb-8">{r.desc}</p>
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push(isRetake ? "/profile" : "/dashboard")}
             className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors shadow-md shadow-purple-200"
           >
-            はじめる →
+            {isRetake ? "プロフィールへ戻る →" : "はじめる →"}
           </button>
         </div>
       </main>
@@ -105,7 +118,7 @@ export default function QuizPage() {
         {/* ヘッダー */}
         <div className="text-center mb-6">
           <span className="text-xl font-extrabold text-purple-700 tracking-tight">NudgeMe</span>
-          <p className="text-sm text-gray-500 mt-0.5">性格診断</p>
+          <p className="text-sm text-gray-500 mt-0.5">{isRetake ? "性格再診断" : "性格診断"}</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-purple-100 p-8">

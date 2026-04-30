@@ -37,3 +37,8 @@ func (r *UserRepository) UpdateCharacter(userID uint, character string) error {
 	return r.db.Model(&model.User{}).Where("id = ?", userID).
 		Update("ai_character", character).Error
 }
+
+func (r *UserRepository) UpdatePersonality(userID uint, personalityType string) error {
+	return r.db.Model(&model.User{}).Where("id = ?", userID).
+		Update("personality_type", personalityType).Error
+}
