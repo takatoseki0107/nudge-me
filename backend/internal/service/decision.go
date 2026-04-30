@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	"strings"
 
@@ -118,6 +119,7 @@ func (s *DecisionService) callClaude(question string, options []string, characte
 		},
 	})
 	if err != nil {
+		log.Printf("Anthropic API error (full): %v", err)
 		errStr := err.Error()
 		if strings.Contains(errStr, "credit balance is too low") {
 			return "", "", fmt.Errorf("api_credit_exhausted: %w", err)

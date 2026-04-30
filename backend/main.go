@@ -42,6 +42,12 @@ func main() {
 		log.Fatalf("failed to migrate: %v", err)
 	}
 
+	anthropicKey := getEnv("ANTHROPIC_API_KEY", "")
+	if anthropicKey == "" {
+		log.Fatal("ANTHROPIC_API_KEY is not set")
+	}
+	log.Printf("ANTHROPIC_API_KEY loaded: length=%d", len(anthropicKey))
+
 	jwtSecret := getEnv("JWT_SECRET", "change-me")
 
 	userRepo := repository.NewUserRepository(db)
@@ -54,7 +60,7 @@ func main() {
 	}
 
 	decisionRepo := repository.NewDecisionRepository(db)
-	decisionSvc := service.NewDecisionService(decisionRepo, userRepo, getEnv("ANTHROPIC_API_KEY", ""))
+	decisionSvc := service.NewDecisionService(decisionRepo, userRepo, anthropicKey)
 
 	authHandler := handler.NewAuthHandler(authService)
 	personalityHandler := handler.NewPersonalityHandler(personalitySvc)
