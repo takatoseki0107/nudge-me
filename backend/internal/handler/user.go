@@ -33,9 +33,9 @@ func (h *UserHandler) UpdateCharacter(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
-	allowed := map[string]bool{"harsh": true, "kind": true, "sporty": true}
+	allowed := map[string]bool{"sarcastic": true, "kind": true, "sporty": true}
 	if !allowed[req.Character] {
-		return echo.NewHTTPError(http.StatusBadRequest, "character must be harsh, kind, or sporty")
+		return echo.NewHTTPError(http.StatusBadRequest, "character must be sarcastic, kind, or sporty")
 	}
 
 	if err := h.userRepo.UpdateCharacter(userID, req.Character); err != nil {

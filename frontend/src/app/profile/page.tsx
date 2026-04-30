@@ -15,7 +15,7 @@ const PERSONALITY_LABELS: Record<PersonalityType, { label: string; emoji: string
 };
 
 const CHARACTER_LABELS: Record<string, { label: string; emoji: string }> = {
-  harsh:  { label: "毒舌キャラ",     emoji: "😈" },
+  sarcastic:  { label: "毒舌キャラ",     emoji: "😈" },
   kind:   { label: "優しいキャラ",   emoji: "🌸" },
   sporty: { label: "体育会系キャラ", emoji: "🔥" },
 };

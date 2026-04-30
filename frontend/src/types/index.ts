@@ -1,5 +1,5 @@
 export type PersonalityType = "analytical" | "spontaneous" | "empathetic" | "competitive";
-export type AICharacter = "harsh" | "kind" | "sporty";
+export type AICharacter = "sarcastic" | "kind" | "sporty";
 
 export interface User {
   id: number;

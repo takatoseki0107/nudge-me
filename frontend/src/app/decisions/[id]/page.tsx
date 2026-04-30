@@ -9,7 +9,7 @@ import type { Decision, AICharacter } from "@/types";
 import type { OptionStatsResponse } from "@/lib/decision";
 
 const CHARACTER_META: Record<string, { emoji: string; label: string; color: string }> = {
-  harsh:  { emoji: "😈", label: "毒舌キャラ",     color: "text-red-600" },
+  sarcastic:  { emoji: "😈", label: "毒舌キャラ",     color: "text-red-600" },
   kind:   { emoji: "🌸", label: "優しいキャラ",   color: "text-pink-600" },
   sporty: { emoji: "🔥", label: "体育会系キャラ", color: "text-orange-500" },
 };
