@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getQuestions, saveResult } from "@/lib/personality";
 import { updatePersonality } from "@/lib/user";
@@ -19,7 +19,7 @@ function extractType(option: string): PersonalityType {
   return (match?.[1] ?? "analytical") as PersonalityType;
 }
 
-export default function QuizPage() {
+function QuizContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isRetake = searchParams.get("mode") === "retake";
@@ -197,5 +197,13 @@ export default function QuizPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function QuizPage() {
+  return (
+    <Suspense>
+      <QuizContent />
+    </Suspense>
   );
 }
