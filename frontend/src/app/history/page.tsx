@@ -2,13 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getToken, clearToken } from "@/lib/auth";
 import { getDecisions, updateRegret } from "@/lib/decision";
 import type { Decision } from "@/types";
 
 function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString("ja-JP", { year: "numeric", month: "short", day: "numeric" });
+  return new Date(iso).toLocaleDateString("ja-JP", { year: "numeric", month: "short", day: "numeric" });
+}
+
+function RegretBadge({ regret }: { regret: boolean | null }) {
+  if (regret === null) return null;
+  return regret ? (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-600">
+      😔 後悔した
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-600">
+      ✓ 後悔なし
+    </span>
+  );
 }
 
 function HistoryCard({
@@ -18,68 +31,71 @@ function HistoryCard({
   decision: Decision;
   onRegretUpdate: (id: number, regret: boolean) => void;
 }) {
-  const [loading, setLoading] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   async function handleRegret(regret: boolean) {
-    setLoading(true);
+    setUpdating(true);
     try {
       await updateRegret(decision.id, regret);
       onRegretUpdate(decision.id, regret);
     } finally {
-      setLoading(false);
+      setUpdating(false);
     }
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow p-5 space-y-3">
-      <div className="flex justify-between items-start">
-        <p className="font-semibold text-gray-800 flex-1 pr-4">{decision.question}</p>
-        <span className="text-xs text-gray-400 whitespace-nowrap">{formatDate(decision.created_at)}</span>
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+      {/* 上段: 悩み + 日付 + バッジ */}
+      <div className="flex justify-between items-start gap-3">
+        <p className="font-semibold text-gray-800 flex-1 leading-snug">{decision.question}</p>
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <span className="text-xs text-gray-300">{formatDate(decision.created_at)}</span>
+          <RegretBadge regret={decision.regret} />
+        </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      {/* 選択肢 */}
+      <div className="flex flex-wrap gap-1.5">
         {decision.options.map((opt, i) => (
           <span
             key={i}
-            className={`px-3 py-1 rounded-full text-sm ${
+            className={`px-3 py-1 rounded-full text-xs font-medium border ${
               opt === decision.ai_choice
-                ? "bg-blue-100 text-blue-700 font-semibold"
-                : "bg-gray-100 text-gray-500"
+                ? "border-purple-300 bg-purple-50 text-purple-700"
+                : "border-gray-100 bg-gray-50 text-gray-400"
             }`}
           >
-            {opt}
+            {opt === decision.ai_choice && "✓ "}{opt}
           </span>
         ))}
       </div>
 
-      <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600">
-        <span className="font-medium text-blue-600">AI の選択: </span>
-        {decision.ai_choice}
-        {decision.ai_reason && (
-          <p className="mt-1 text-gray-500 text-xs">{decision.ai_reason}</p>
-        )}
-      </div>
+      {/* AI の理由（折りたたみ風） */}
+      {decision.ai_reason && (
+        <p className="text-xs text-gray-400 leading-relaxed line-clamp-2">{decision.ai_reason}</p>
+      )}
 
-      <div className="flex items-center gap-3 pt-1">
-        <span className="text-sm text-gray-500">結果は？</span>
+      {/* フィードバックボタン */}
+      <div className="flex items-center gap-2 pt-1 border-t border-gray-50">
+        <span className="text-xs text-gray-400 mr-1">結果は？</span>
         <button
           onClick={() => handleRegret(false)}
-          disabled={loading}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+          disabled={updating}
+          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
             decision.regret === false
-              ? "bg-green-500 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-700"
+              ? "bg-green-500 text-white shadow-sm"
+              : "bg-gray-100 text-gray-500 hover:bg-green-50 hover:text-green-600"
           }`}
         >
           後悔なし
         </button>
         <button
           onClick={() => handleRegret(true)}
-          disabled={loading}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+          disabled={updating}
+          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
             decision.regret === true
-              ? "bg-red-500 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-700"
+              ? "bg-red-500 text-white shadow-sm"
+              : "bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600"
           }`}
         >
           後悔した
@@ -104,26 +120,22 @@ export default function HistoryPage() {
   }, [router]);
 
   function handleRegretUpdate(id: number, regret: boolean) {
-    setDecisions((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, regret } : d))
-    );
+    setDecisions((prev) => prev.map((d) => (d.id === id ? { ...d, regret } : d)));
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-4 py-3 flex justify-between items-center">
+    <div className="min-h-screen bg-slate-50">
+      <header className="bg-white border-b border-gray-100 px-5 py-3 flex justify-between items-center sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="text-gray-500 hover:text-gray-700 text-sm"
-          >
-            ← 戻る
-          </button>
-          <h1 className="text-xl font-bold text-gray-800">決定履歴</h1>
+          <Link href="/dashboard" className="text-gray-400 hover:text-purple-600 transition-colors text-sm">
+            ←
+          </Link>
+          <span className="text-lg font-extrabold text-purple-700 tracking-tight">NudgeMe</span>
+          <span className="text-sm text-gray-400 font-medium">決定履歴</span>
         </div>
         <button
           onClick={() => { clearToken(); router.push("/login"); }}
-          className="text-sm text-gray-500 hover:text-gray-700"
+          className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
         >
           ログアウト
         </button>
@@ -131,36 +143,41 @@ export default function HistoryPage() {
 
       <div className="max-w-2xl mx-auto px-4 py-8">
         {loading && (
-          <div className="text-center text-gray-400 py-16">読み込み中...</div>
-        )}
-
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm">
-            {error}
+          <div className="text-center py-16">
+            <div className="w-8 h-8 border-4 border-purple-300 border-t-purple-600 rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-gray-400 text-sm">読み込み中...</p>
           </div>
         )}
 
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm">{error}</div>
+        )}
+
         {!loading && !error && decisions.length === 0 && (
-          <div className="text-center text-gray-400 py-16">
+          <div className="text-center py-20">
             <p className="text-4xl mb-4">📋</p>
-            <p>まだ決定履歴がありません</p>
-            <button
-              onClick={() => router.push("/dashboard")}
-              className="mt-4 text-sm text-blue-600 hover:underline"
+            <p className="text-gray-500 font-medium mb-2">まだ決定履歴がありません</p>
+            <p className="text-gray-400 text-sm mb-6">AIに悩みを相談して、決断を記録しよう。</p>
+            <Link
+              href="/dashboard"
+              className="inline-block px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors text-sm"
             >
               AIに決めてもらう →
-            </button>
+            </Link>
           </div>
         )}
 
         {!loading && decisions.length > 0 && (
-          <div className="space-y-4">
-            {decisions.map((d) => (
-              <HistoryCard key={d.id} decision={d} onRegretUpdate={handleRegretUpdate} />
-            ))}
-          </div>
+          <>
+            <p className="text-xs text-gray-400 mb-4">{decisions.length} 件の決定履歴</p>
+            <div className="space-y-4">
+              {decisions.map((d) => (
+                <HistoryCard key={d.id} decision={d} onRegretUpdate={handleRegretUpdate} />
+              ))}
+            </div>
+          </>
         )}
       </div>
-    </main>
+    </div>
   );
 }

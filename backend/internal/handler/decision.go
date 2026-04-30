@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/takatoseki0107/nudge-me/backend/internal/service"
@@ -38,6 +40,10 @@ func (h *DecisionHandler) Create(c echo.Context) error {
 
 	decision, err := h.svc.Create(userID, req.Question, req.Options, req.Character)
 	if err != nil {
+		log.Printf("ERROR Create decision: %v", err)
+		if strings.Contains(err.Error(), "api_credit_exhausted") {
+			return echo.NewHTTPError(http.StatusServiceUnavailable, "AI service is temporarily unavailable")
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create decision")
 	}
 	return c.JSON(http.StatusCreated, decision)
