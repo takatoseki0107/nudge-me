@@ -120,6 +120,23 @@
 |----------|------|------|
 | GET | `/api/v1/stats/options` | 選択肢別選択統計 |
 
+#### GET /api/v1/stats/options
+```json
+// Response 200
+{
+  "stats": [
+    {
+      "option": "転職する",
+      "count": 42
+    },
+    {
+      "option": "続ける",
+      "count": 18
+    }
+  ]
+}
+```
+
 ---
 
 ### ユーザー（要認証）
@@ -133,10 +150,19 @@
 #### PATCH /api/v1/users/me/character
 ```json
 // Request
-{ "ai_character": "harsh" }
+{ "ai_character": "sarcastic" }
 
 // Response 200
-{ "user": { "id": 1, "ai_character": "harsh", ... } }
+{ "user": { "id": 1, "ai_character": "sarcastic", ... } }
+```
+
+#### PATCH /api/v1/users/me/personality
+```json
+// Request
+{ "personality_type": "analytical" }
+
+// Response 200
+{ "user": { "id": 1, "personality_type": "analytical", ... } }
 ```
 
 ---

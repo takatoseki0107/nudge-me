@@ -71,18 +71,7 @@ sudo mkdir -p /opt/nudge-me/data
 sudo chown ubuntu:ubuntu /opt/nudge-me
 ```
 
-### 3. Go のインストール
-
-```bash
-wget https://go.dev/dl/go1.22.5.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.22.5.linux-amd64.tar.gz
-rm go1.22.5.linux-amd64.tar.gz
-echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-source ~/.bashrc
-go version
-```
-
-### 4. Node.js のインストール
+### 3. Node.js のインストール
 
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -120,12 +109,36 @@ nano /opt/nudge-me/backend/.env
 | `ANTHROPIC_API_KEY` | Anthropic Console で取得したAPIキー |
 | `FRONTEND_URL` | `http://<EC2_PUBLIC_IP>` または `https://<your-domain>` |
 
-### 8. デプロイスクリプトの実行
+### 8. デプロイ手順
+
+バックエンドはローカルでクロスコンパイルし、SCPで転送します。フロントエンドはEC2上でビルドします。
+
+#### バックエンド（クロスコンパイル → SCP転送）
+
+ローカルマシンで実行:
 
 ```bash
-cd /opt/nudge-me
-chmod +x deploy.sh
-./deploy.sh
+# Linux/amd64 向けにクロスコンパイル
+cd backend
+GOOS=linux GOARCH=amd64 go build -o nudge-me-server main.go
+
+# EC2へバイナリを転送
+scp -i ~/.ssh/takatoseki.pem nudge-me-server ubuntu@52.193.6.70:/opt/nudge-me/backend/nudge-me-server
+
+# バックエンドサービスを再起動
+ssh -i ~/.ssh/takatoseki.pem ubuntu@52.193.6.70 "sudo systemctl restart nudge-me-backend"
+```
+
+#### フロントエンド（EC2上でビルド）
+
+EC2上で実行:
+
+```bash
+cd /opt/nudge-me/frontend
+git pull origin main
+npm install
+npm run build
+sudo systemctl restart nudge-me-frontend
 ```
 
 ---
@@ -259,6 +272,12 @@ sudo systemctl restart nudge-me-frontend
 sudo systemctl status nudge-me-backend
 sudo systemctl status nudge-me-frontend
 
-# コードの更新・再デプロイ
-cd /opt/nudge-me && ./deploy.sh
+# バックエンド更新（ローカルから）
+cd backend
+GOOS=linux GOARCH=amd64 go build -o nudge-me-server main.go
+scp -i ~/.ssh/takatoseki.pem nudge-me-server ubuntu@52.193.6.70:/opt/nudge-me/backend/nudge-me-server
+ssh -i ~/.ssh/takatoseki.pem ubuntu@52.193.6.70 "sudo systemctl restart nudge-me-backend"
+
+# フロントエンド更新（EC2上で）
+cd /opt/nudge-me/frontend && git pull origin main && npm install && npm run build && sudo systemctl restart nudge-me-frontend
 ```
