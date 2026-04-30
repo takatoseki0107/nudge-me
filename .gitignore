@@ -10,6 +10,7 @@ Thumbs.db
 # Go
 backend/tmp/
 backend/nudge-me
+backend/nudge-me-server-linux
 *.exe
 
 # SQLite
