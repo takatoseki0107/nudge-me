@@ -31,14 +31,14 @@ func (h *StatsHandler) GetOptionStats(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "options[] is required")
 	}
 
-	counts, err := h.decisionRepo.CountByOption(question, options)
+	counts, err := h.decisionRepo.CountByOption(c.Request().Context(), question, options)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch stats")
 	}
 
 	total := 0
-	for _, c := range counts {
-		total += c
+	for _, cnt := range counts {
+		total += cnt
 	}
 
 	stats := make([]optionStat, 0, len(options))

@@ -32,7 +32,7 @@ func JWTAuth(secret string) echo.MiddlewareFunc {
 				return echo.NewHTTPError(http.StatusUnauthorized, "invalid token claims")
 			}
 
-			c.Set("userID", uint(claims["user_id"].(float64)))
+			c.Set("userID", claims["user_id"].(string))
 			return next(c)
 		}
 	}

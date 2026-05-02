@@ -1,62 +1,44 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
-	"github.com/joho/godotenv"
+	"github.com/akrylysov/algnhsa"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/glebarez/sqlite"
-	"gorm.io/gorm"
 
+	dynamoclient "github.com/takatoseki0107/nudge-me/backend/internal/dynamodb"
 	"github.com/takatoseki0107/nudge-me/backend/internal/handler"
 	custommiddleware "github.com/takatoseki0107/nudge-me/backend/internal/middleware"
-	"github.com/takatoseki0107/nudge-me/backend/internal/model"
 	"github.com/takatoseki0107/nudge-me/backend/internal/repository"
 	"github.com/takatoseki0107/nudge-me/backend/internal/service"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using environment variables")
-	}
+	ctx := context.Background()
 
-	db, err := gorm.Open(sqlite.Open(getEnv("DB_PATH", "./nudge.db")), &gorm.Config{})
+	db, err := dynamoclient.NewClient(ctx)
 	if err != nil {
-		log.Fatalf("failed to connect database: %v", err)
+		log.Fatalf("failed to create DynamoDB client: %v", err)
 	}
 
-	sqlDB, err := db.DB()
-	if err != nil {
-		log.Fatalf("failed to get sql.DB: %v", err)
-	}
-	// Prevent SQLite write concurrency issues
-	sqlDB.SetMaxOpenConns(1)
-
-	if err := db.AutoMigrate(
-		&model.User{},
-		&model.Decision{},
-		&model.PersonalityQuestion{},
-	); err != nil {
-		log.Fatalf("failed to migrate: %v", err)
-	}
-
-	jwtSecret := getEnv("JWT_SECRET", "change-me")
+	jwtSecret := mustEnv("JWT_SECRET")
 
 	userRepo := repository.NewUserRepository(db)
-	authService := service.NewAuthService(userRepo, jwtSecret)
+	authSvc := service.NewAuthService(userRepo, jwtSecret)
 
 	personalityRepo := repository.NewPersonalityRepository(db)
 	personalitySvc := service.NewPersonalityService(personalityRepo)
-	if err := personalitySvc.SeedIfEmpty(); err != nil {
+	if err := personalitySvc.SeedIfEmpty(ctx); err != nil {
 		log.Fatalf("failed to seed personality questions: %v", err)
 	}
 
 	decisionRepo := repository.NewDecisionRepository(db)
-	decisionSvc := service.NewDecisionService(decisionRepo, userRepo, getEnv("ANTHROPIC_API_KEY", ""))
+	decisionSvc := service.NewDecisionService(decisionRepo, userRepo, mustEnv("ANTHROPIC_API_KEY"))
 
-	authHandler := handler.NewAuthHandler(authService)
+	authHandler := handler.NewAuthHandler(authSvc)
 	personalityHandler := handler.NewPersonalityHandler(personalitySvc)
 	decisionHandler := handler.NewDecisionHandler(decisionSvc)
 	userHandler := handler.NewUserHandler(userRepo)
@@ -66,7 +48,7 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{getEnv("FRONTEND_URL", "http://localhost:3000")},
+		AllowOrigins: []string{getEnv("FRONTEND_URL", "*")},
 		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAuthorization},
 		AllowMethods: []string{"GET", "POST", "PATCH", "DELETE"},
 	}))
@@ -100,7 +82,15 @@ func main() {
 	users.PATCH("/me/character", userHandler.UpdateCharacter)
 	users.PATCH("/me/personality", userHandler.UpdatePersonality)
 
-	e.Logger.Fatal(e.Start(":" + getEnv("PORT", "8080")))
+	algnhsa.ListenAndServe(e, nil)
+}
+
+func mustEnv(key string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		log.Fatalf("required environment variable %s is not set", key)
+	}
+	return v
 }
 
 func getEnv(key, fallback string) string {

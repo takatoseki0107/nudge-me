@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/takatoseki0107/nudge-me/backend/internal/model"
 	"github.com/takatoseki0107/nudge-me/backend/internal/repository"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 type AuthService struct {
@@ -23,12 +23,12 @@ func NewAuthService(userRepo *repository.UserRepository, jwtSecret string) *Auth
 	}
 }
 
-func (s *AuthService) Register(email, password string) (*model.User, error) {
-	_, err := s.userRepo.FindByEmail(email)
+func (s *AuthService) Register(ctx context.Context, email, password string) (*model.User, error) {
+	_, err := s.userRepo.FindByEmail(ctx, email)
 	if err == nil {
 		return nil, errors.New("email already registered")
 	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
+	if !errors.Is(err, repository.ErrNotFound) {
 		return nil, err
 	}
 
@@ -42,14 +42,14 @@ func (s *AuthService) Register(email, password string) (*model.User, error) {
 		PasswordHash: string(hash),
 		AICharacter:  "kind",
 	}
-	if err := s.userRepo.Create(user); err != nil {
+	if err := s.userRepo.Create(ctx, user); err != nil {
 		return nil, err
 	}
 	return user, nil
 }
 
-func (s *AuthService) Login(email, password string) (string, *model.User, error) {
-	user, err := s.userRepo.FindByEmail(email)
+func (s *AuthService) Login(ctx context.Context, email, password string) (string, *model.User, error) {
+	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		return "", nil, errors.New("invalid email or password")
 	}

@@ -30,6 +30,17 @@ frontend/tsconfig.tsbuildinfo
 frontend/.turbo/
 frontend/dist/
 
+# Lambda build artifacts
+backend/bootstrap
+backend/bootstrap.zip
+
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/terraform.tfvars
+
 # Editor
 .vscode/
 .idea/

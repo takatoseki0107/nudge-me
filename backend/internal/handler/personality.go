@@ -16,7 +16,7 @@ func NewPersonalityHandler(svc *service.PersonalityService) *PersonalityHandler 
 }
 
 func (h *PersonalityHandler) GetQuestions(c echo.Context) error {
-	questions, err := h.svc.GetQuestions()
+	questions, err := h.svc.GetQuestions(c.Request().Context())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch questions")
 	}
@@ -28,7 +28,7 @@ type saveResultRequest struct {
 }
 
 func (h *PersonalityHandler) SaveResult(c echo.Context) error {
-	userID := c.Get("userID").(uint)
+	userID := c.Get("userID").(string)
 
 	var req saveResultRequest
 	if err := c.Bind(&req); err != nil {
@@ -38,7 +38,7 @@ func (h *PersonalityHandler) SaveResult(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "answers are required")
 	}
 
-	pt, err := h.svc.SaveResult(userID, req.Answers)
+	pt, err := h.svc.SaveResult(c.Request().Context(), userID, req.Answers)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to save result")
 	}

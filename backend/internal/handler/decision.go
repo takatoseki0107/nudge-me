@@ -3,7 +3,6 @@ package handler
 import (
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -25,7 +24,7 @@ type createDecisionRequest struct {
 }
 
 func (h *DecisionHandler) Create(c echo.Context) error {
-	userID := c.Get("userID").(uint)
+	userID := c.Get("userID").(string)
 
 	var req createDecisionRequest
 	if err := c.Bind(&req); err != nil {
@@ -38,7 +37,7 @@ func (h *DecisionHandler) Create(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "at least 2 options are required")
 	}
 
-	decision, err := h.svc.Create(userID, req.Question, req.Options, req.Character)
+	decision, err := h.svc.Create(c.Request().Context(), userID, req.Question, req.Options, req.Character)
 	if err != nil {
 		log.Printf("ERROR Create decision: %v", err)
 		if strings.Contains(err.Error(), "api_credit_exhausted") {
@@ -50,7 +49,7 @@ func (h *DecisionHandler) Create(c echo.Context) error {
 }
 
 func (h *DecisionHandler) CreateRandom(c echo.Context) error {
-	userID := c.Get("userID").(uint)
+	userID := c.Get("userID").(string)
 
 	var req createDecisionRequest
 	if err := c.Bind(&req); err != nil {
@@ -63,7 +62,7 @@ func (h *DecisionHandler) CreateRandom(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "at least 2 options are required")
 	}
 
-	decision, err := h.svc.CreateRandom(userID, req.Question, req.Options)
+	decision, err := h.svc.CreateRandom(c.Request().Context(), userID, req.Question, req.Options)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create random decision")
 	}
@@ -71,8 +70,8 @@ func (h *DecisionHandler) CreateRandom(c echo.Context) error {
 }
 
 func (h *DecisionHandler) List(c echo.Context) error {
-	userID := c.Get("userID").(uint)
-	decisions, err := h.svc.List(userID)
+	userID := c.Get("userID").(string)
+	decisions, err := h.svc.List(c.Request().Context(), userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch decisions")
 	}
@@ -80,13 +79,10 @@ func (h *DecisionHandler) List(c echo.Context) error {
 }
 
 func (h *DecisionHandler) Get(c echo.Context) error {
-	userID := c.Get("userID").(uint)
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
-	}
+	userID := c.Get("userID").(string)
+	id := c.Param("id")
 
-	decision, err := h.svc.Get(uint(id), userID)
+	decision, err := h.svc.Get(c.Request().Context(), id, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "decision not found")
 	}
@@ -98,18 +94,15 @@ type updateRegretRequest struct {
 }
 
 func (h *DecisionHandler) UpdateRegret(c echo.Context) error {
-	userID := c.Get("userID").(uint)
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
-	}
+	userID := c.Get("userID").(string)
+	id := c.Param("id")
 
 	var req updateRegretRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
 
-	decision, err := h.svc.UpdateRegret(uint(id), userID, req.Regret)
+	decision, err := h.svc.UpdateRegret(c.Request().Context(), id, userID, req.Regret)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "decision not found")
 	}
