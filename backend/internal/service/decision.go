@@ -34,12 +34,12 @@ type aiResponse struct {
 	Reason string `json:"reason"`
 }
 
-func (s *DecisionService) Create(userID uint, question string, options []string, character string) (*model.Decision, error) {
+func (s *DecisionService) Create(ctx context.Context, userID, question string, options []string, character string) (*model.Decision, error) {
 	if len(options) < 2 {
 		return nil, errors.New("at least 2 options are required")
 	}
 
-	user, err := s.userRepo.FindByID(userID)
+	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -57,18 +57,18 @@ func (s *DecisionService) Create(userID uint, question string, options []string,
 	d := &model.Decision{
 		UserID:   userID,
 		Question: question,
-		Options:  model.JSONStringSlice(options),
+		Options:  options,
 		AIChoice: choice,
 		AIReason: reason,
 		IsRandom: false,
 	}
-	if err := s.repo.Create(d); err != nil {
+	if err := s.repo.Create(ctx, d); err != nil {
 		return nil, err
 	}
 	return d, nil
 }
 
-func (s *DecisionService) CreateRandom(userID uint, question string, options []string) (*model.Decision, error) {
+func (s *DecisionService) CreateRandom(ctx context.Context, userID, question string, options []string) (*model.Decision, error) {
 	if len(options) < 2 {
 		return nil, errors.New("at least 2 options are required")
 	}
@@ -77,30 +77,30 @@ func (s *DecisionService) CreateRandom(userID uint, question string, options []s
 	d := &model.Decision{
 		UserID:   userID,
 		Question: question,
-		Options:  model.JSONStringSlice(options),
+		Options:  options,
 		AIChoice: choice,
 		AIReason: "運任せで決めました！",
 		IsRandom: true,
 	}
-	if err := s.repo.Create(d); err != nil {
+	if err := s.repo.Create(ctx, d); err != nil {
 		return nil, err
 	}
 	return d, nil
 }
 
-func (s *DecisionService) List(userID uint) ([]model.Decision, error) {
-	return s.repo.FindByUserID(userID)
+func (s *DecisionService) List(ctx context.Context, userID string) ([]model.Decision, error) {
+	return s.repo.FindByUserID(ctx, userID)
 }
 
-func (s *DecisionService) Get(id, userID uint) (*model.Decision, error) {
-	return s.repo.FindByIDAndUserID(id, userID)
+func (s *DecisionService) Get(ctx context.Context, id, userID string) (*model.Decision, error) {
+	return s.repo.FindByIDAndUserID(ctx, id, userID)
 }
 
-func (s *DecisionService) UpdateRegret(id, userID uint, regret bool) (*model.Decision, error) {
-	if err := s.repo.UpdateRegret(id, userID, regret); err != nil {
+func (s *DecisionService) UpdateRegret(ctx context.Context, id, userID string, regret bool) (*model.Decision, error) {
+	if err := s.repo.UpdateRegret(ctx, id, userID, regret); err != nil {
 		return nil, err
 	}
-	return s.repo.FindByIDAndUserID(id, userID)
+	return s.repo.FindByIDAndUserID(ctx, id, userID)
 }
 
 func (s *DecisionService) callClaude(question string, options []string, character, personalityType string) (string, string, error) {
@@ -127,7 +127,6 @@ func (s *DecisionService) callClaude(question string, options []string, characte
 
 	raw := msg.Content[0].Text
 	raw = strings.TrimSpace(raw)
-	// strip markdown code fences if present
 	raw = strings.TrimPrefix(raw, "```json")
 	raw = strings.TrimPrefix(raw, "```")
 	raw = strings.TrimSuffix(raw, "```")

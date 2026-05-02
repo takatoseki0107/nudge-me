@@ -37,7 +37,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "password must be at least 8 characters")
 	}
 
-	user, err := h.authService.Register(req.Email, req.Password)
+	user, err := h.authService.Register(c.Request().Context(), req.Email, req.Password)
 	if err != nil {
 		if err.Error() == "email already registered" {
 			return echo.NewHTTPError(http.StatusConflict, err.Error())
@@ -60,7 +60,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "email and password are required")
 	}
 
-	token, user, err := h.authService.Login(req.Email, req.Password)
+	token, user, err := h.authService.Login(c.Request().Context(), req.Email, req.Password)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}

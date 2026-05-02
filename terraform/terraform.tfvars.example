@@ -1,0 +1,7 @@
+aws_region        = "ap-northeast-1"
+project_name      = "nudge-me"
+environment       = "prod"
+jwt_secret        = "your-super-secret-key-here-32-chars-min"
+anthropic_api_key = "sk-ant-..."
+frontend_url      = "https://your-amplify-domain.amplifyapp.com"
+lambda_zip_path   = "../backend/bootstrap.zip"

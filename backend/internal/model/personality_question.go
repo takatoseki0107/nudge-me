@@ -1,7 +1,7 @@
 package model
 
 type PersonalityQuestion struct {
-	ID       uint            `gorm:"primaryKey" json:"id"`
-	Question string          `gorm:"not null" json:"question"`
-	Options  JSONStringSlice `gorm:"type:text" json:"options"`
+	ID       string   `json:"id"`
+	Question string   `json:"question"`
+	Options  []string `json:"options"`
 }

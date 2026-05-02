@@ -16,8 +16,8 @@ func NewUserHandler(userRepo *repository.UserRepository) *UserHandler {
 }
 
 func (h *UserHandler) GetMe(c echo.Context) error {
-	userID := c.Get("userID").(uint)
-	user, err := h.userRepo.FindByID(userID)
+	userID := c.Get("userID").(string)
+	user, err := h.userRepo.FindByID(c.Request().Context(), userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "user not found")
 	}
@@ -25,7 +25,7 @@ func (h *UserHandler) GetMe(c echo.Context) error {
 }
 
 func (h *UserHandler) UpdateCharacter(c echo.Context) error {
-	userID := c.Get("userID").(uint)
+	userID := c.Get("userID").(string)
 
 	var req struct {
 		Character string `json:"character"`
@@ -38,11 +38,11 @@ func (h *UserHandler) UpdateCharacter(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "character must be sarcastic, kind, or sporty")
 	}
 
-	if err := h.userRepo.UpdateCharacter(userID, req.Character); err != nil {
+	if err := h.userRepo.UpdateCharacter(c.Request().Context(), userID, req.Character); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update character")
 	}
 
-	user, err := h.userRepo.FindByID(userID)
+	user, err := h.userRepo.FindByID(c.Request().Context(), userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch user")
 	}
@@ -50,7 +50,7 @@ func (h *UserHandler) UpdateCharacter(c echo.Context) error {
 }
 
 func (h *UserHandler) UpdatePersonality(c echo.Context) error {
-	userID := c.Get("userID").(uint)
+	userID := c.Get("userID").(string)
 
 	var req struct {
 		PersonalityType string `json:"personality_type"`
@@ -63,11 +63,11 @@ func (h *UserHandler) UpdatePersonality(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid personality_type")
 	}
 
-	if err := h.userRepo.UpdatePersonality(userID, req.PersonalityType); err != nil {
+	if err := h.userRepo.UpdatePersonality(c.Request().Context(), userID, req.PersonalityType); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update personality")
 	}
 
-	user, err := h.userRepo.FindByID(userID)
+	user, err := h.userRepo.FindByID(c.Request().Context(), userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch user")
 	}
