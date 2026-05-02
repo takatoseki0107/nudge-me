@@ -1,18 +1,18 @@
 version: 1
-appRoot: frontend
 frontend:
   phases:
     preBuild:
       commands:
-        - npm ci
+        - cd frontend && npm ci
     build:
       commands:
         - npm run build
+        - bash scripts/build-amplify.sh
   artifacts:
-    baseDirectory: .next
+    baseDirectory: frontend/.amplify-hosting
     files:
       - "**/*"
   cache:
     paths:
-      - node_modules/**/*
-      - .next/cache/**/*
+      - frontend/node_modules/**/*
+      - frontend/.next/cache/**/*
