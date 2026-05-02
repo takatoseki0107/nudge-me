@@ -22,12 +22,12 @@ export async function getDecisions(): Promise<Decision[]> {
   return res.data;
 }
 
-export async function getDecision(id: number): Promise<Decision> {
+export async function getDecision(id: string): Promise<Decision> {
   const res = await api.get<Decision>(`/decisions/${id}`);
   return res.data;
 }
 
-export async function updateRegret(id: number, regret: boolean): Promise<Decision> {
+export async function updateRegret(id: string, regret: boolean): Promise<Decision> {
   const res = await api.patch<Decision>(`/decisions/${id}/regret`, { regret });
   return res.data;
 }

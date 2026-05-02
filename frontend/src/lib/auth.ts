@@ -1,7 +1,7 @@
 import api from "./api";
 
 export interface AuthUser {
-  id: number;
+  id: string;
   email: string;
 }
 

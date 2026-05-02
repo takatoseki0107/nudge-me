@@ -2,7 +2,7 @@ export type PersonalityType = "analytical" | "spontaneous" | "empathetic" | "com
 export type AICharacter = "sarcastic" | "kind" | "sporty";
 
 export interface User {
-  id: number;
+  id: string;
   email: string;
   personality_type: PersonalityType | null;
   ai_character: AICharacter;
@@ -10,8 +10,8 @@ export interface User {
 }
 
 export interface Decision {
-  id: number;
-  user_id: number;
+  id: string;
+  user_id: string;
   question: string;
   options: string[];
   ai_choice: string;
@@ -22,7 +22,7 @@ export interface Decision {
 }
 
 export interface PersonalityQuestion {
-  id: number;
+  id: string;
   question: string;
   options: string[];
 }
