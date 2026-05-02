@@ -48,9 +48,6 @@ function QuizContent() {
     const next = [...answers];
     next[current] = type;
     setAnswers(next);
-    if (current < questions.length - 1) {
-      setTimeout(() => setCurrent((c) => c + 1), 200);
-    }
   }
 
   async function handleSubmit() {
