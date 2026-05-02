@@ -12,14 +12,13 @@ import (
 	"github.com/takatoseki0107/nudge-me/backend/internal/model"
 )
 
-const decisionsTable = "nudge-me-decisions"
-
 type DecisionRepository struct {
-	db *dynamodb.Client
+	db    *dynamodb.Client
+	table string
 }
 
-func NewDecisionRepository(db *dynamodb.Client) *DecisionRepository {
-	return &DecisionRepository{db: db}
+func NewDecisionRepository(db *dynamodb.Client, table string) *DecisionRepository {
+	return &DecisionRepository{db: db, table: table}
 }
 
 func (r *DecisionRepository) Create(ctx context.Context, d *model.Decision) error {
@@ -32,7 +31,7 @@ func (r *DecisionRepository) Create(ctx context.Context, d *model.Decision) erro
 	}
 
 	_, err = r.db.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: aws.String(decisionsTable),
+		TableName: aws.String(r.table),
 		Item:      item,
 	})
 	return err
@@ -40,7 +39,7 @@ func (r *DecisionRepository) Create(ctx context.Context, d *model.Decision) erro
 
 func (r *DecisionRepository) FindByUserID(ctx context.Context, userID string) ([]model.Decision, error) {
 	out, err := r.db.Query(ctx, &dynamodb.QueryInput{
-		TableName:              aws.String(decisionsTable),
+		TableName:              aws.String(r.table),
 		IndexName:              aws.String("user_id-created_at-index"),
 		KeyConditionExpression: aws.String("user_id = :uid"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
@@ -61,7 +60,7 @@ func (r *DecisionRepository) FindByUserID(ctx context.Context, userID string) ([
 
 func (r *DecisionRepository) FindByIDAndUserID(ctx context.Context, id, userID string) (*model.Decision, error) {
 	out, err := r.db.GetItem(ctx, &dynamodb.GetItemInput{
-		TableName: aws.String(decisionsTable),
+		TableName: aws.String(r.table),
 		Key: map[string]types.AttributeValue{
 			"id": &types.AttributeValueMemberS{Value: id},
 		},
@@ -91,7 +90,7 @@ func (r *DecisionRepository) UpdateRegret(ctx context.Context, id, userID string
 	_ = existing
 
 	_, err = r.db.UpdateItem(ctx, &dynamodb.UpdateItemInput{
-		TableName: aws.String(decisionsTable),
+		TableName: aws.String(r.table),
 		Key: map[string]types.AttributeValue{
 			"id": &types.AttributeValueMemberS{Value: id},
 		},
@@ -111,7 +110,7 @@ func (r *DecisionRepository) CountByOption(ctx context.Context, question string,
 
 	// Scan with filter — acceptable for stats endpoint (low-frequency call)
 	out, err := r.db.Scan(ctx, &dynamodb.ScanInput{
-		TableName:        aws.String(decisionsTable),
+		TableName:        aws.String(r.table),
 		FilterExpression: aws.String("#q = :q"),
 		ExpressionAttributeNames: map[string]string{
 			"#q": "question",
