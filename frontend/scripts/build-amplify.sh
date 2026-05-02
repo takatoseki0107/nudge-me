@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-# standaloneビルド出力からAmplify Hosting用の.amplify-hosting構造を生成する
-
-NEXT_DIR=".next"
 STANDALONE_DIR=".next/standalone"
 STATIC_DIR=".next/static"
 OUTPUT_DIR=".amplify-hosting"
@@ -12,43 +9,41 @@ rm -rf "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR/compute/default"
 mkdir -p "$OUTPUT_DIR/static/_next/static"
 
-# standaloneサーバーをcompute/defaultにコピー
 cp -r "$STANDALONE_DIR/." "$OUTPUT_DIR/compute/default/"
-
-# 静的ファイルをstaticにコピー
 cp -r "$STATIC_DIR/." "$OUTPUT_DIR/static/_next/static/"
 
-# publicディレクトリがあればコピー
 if [ -d "public" ]; then
   cp -r public/. "$OUTPUT_DIR/static/"
 fi
 
-# deploy-manifest.json を生成
+NEXT_VERSION=$(node -e "console.log(require('./node_modules/next/package.json').version)")
+
 cat > "$OUTPUT_DIR/deploy-manifest.json" <<EOF
 {
   "version": 1,
   "routes": [
     {
-      "path": "/_next/static/<*>",
+      "path": "/_next/static/*",
       "target": {
-        "kind": "Static"
-      },
-      "fallback": null
+        "kind": "Static",
+        "cacheControl": "public, max-age=31536000, immutable"
+      }
     },
     {
-      "path": "/favicon.ico",
+      "path": "/_next/image",
       "target": {
-        "kind": "Static"
-      },
-      "fallback": null
+        "kind": "ImageOptimization",
+        "cacheControl": "public, max-age=3600, immutable"
+      }
     },
     {
-      "path": "/<*>",
-      "target": {
-        "kind": "Compute",
-        "src": "default"
-      },
-      "fallback": null
+      "path": "/*.*",
+      "target": { "kind": "Static" },
+      "fallback": { "kind": "Compute", "src": "default" }
+    },
+    {
+      "path": "/*",
+      "target": { "kind": "Compute", "src": "default" }
     }
   ],
   "computeResources": [
@@ -60,7 +55,7 @@ cat > "$OUTPUT_DIR/deploy-manifest.json" <<EOF
   ],
   "framework": {
     "name": "next",
-    "version": "$(node -e "console.log(require('./node_modules/next/package.json').version)")"
+    "version": "${NEXT_VERSION}"
   }
 }
 EOF
