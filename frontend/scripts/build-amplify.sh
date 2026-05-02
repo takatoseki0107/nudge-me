@@ -30,13 +30,6 @@ cat > "$OUTPUT_DIR/deploy-manifest.json" <<EOF
       }
     },
     {
-      "path": "/_next/image",
-      "target": {
-        "kind": "ImageOptimization",
-        "cacheControl": "public, max-age=3600, immutable"
-      }
-    },
-    {
       "path": "/*.*",
       "target": { "kind": "Static" },
       "fallback": { "kind": "Compute", "src": "default" }
