@@ -12,14 +12,13 @@ import (
 	"github.com/takatoseki0107/nudge-me/backend/internal/model"
 )
 
-const usersTable = "nudge-me-users"
-
 type UserRepository struct {
-	db *dynamodb.Client
+	db    *dynamodb.Client
+	table string
 }
 
-func NewUserRepository(db *dynamodb.Client) *UserRepository {
-	return &UserRepository{db: db}
+func NewUserRepository(db *dynamodb.Client, table string) *UserRepository {
+	return &UserRepository{db: db, table: table}
 }
 
 func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
@@ -35,7 +34,7 @@ func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
 	}
 
 	_, err = r.db.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName:           aws.String(usersTable),
+		TableName:           aws.String(r.table),
 		Item:                item,
 		ConditionExpression: aws.String("attribute_not_exists(id)"),
 	})
@@ -44,7 +43,7 @@ func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*model.User, error) {
 	out, err := r.db.Query(ctx, &dynamodb.QueryInput{
-		TableName:              aws.String(usersTable),
+		TableName:              aws.String(r.table),
 		IndexName:              aws.String("email-index"),
 		KeyConditionExpression: aws.String("email = :email"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
@@ -68,7 +67,7 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*model.
 
 func (r *UserRepository) FindByID(ctx context.Context, id string) (*model.User, error) {
 	out, err := r.db.GetItem(ctx, &dynamodb.GetItemInput{
-		TableName: aws.String(usersTable),
+		TableName: aws.String(r.table),
 		Key: map[string]types.AttributeValue{
 			"id": &types.AttributeValueMemberS{Value: id},
 		},
@@ -89,7 +88,7 @@ func (r *UserRepository) FindByID(ctx context.Context, id string) (*model.User, 
 
 func (r *UserRepository) UpdateCharacter(ctx context.Context, userID, character string) error {
 	_, err := r.db.UpdateItem(ctx, &dynamodb.UpdateItemInput{
-		TableName: aws.String(usersTable),
+		TableName: aws.String(r.table),
 		Key: map[string]types.AttributeValue{
 			"id": &types.AttributeValueMemberS{Value: userID},
 		},
@@ -103,7 +102,7 @@ func (r *UserRepository) UpdateCharacter(ctx context.Context, userID, character 
 
 func (r *UserRepository) UpdatePersonality(ctx context.Context, userID, personalityType string) error {
 	_, err := r.db.UpdateItem(ctx, &dynamodb.UpdateItemInput{
-		TableName: aws.String(usersTable),
+		TableName: aws.String(r.table),
 		Key: map[string]types.AttributeValue{
 			"id": &types.AttributeValueMemberS{Value: userID},
 		},

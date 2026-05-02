@@ -26,16 +26,20 @@ func main() {
 
 	jwtSecret := mustEnv("JWT_SECRET")
 
-	userRepo := repository.NewUserRepository(db)
+	usersTable := mustEnv("DYNAMO_USERS_TABLE")
+	decisionsTable := mustEnv("DYNAMO_DECISIONS_TABLE")
+	personalityTable := mustEnv("DYNAMO_PERSONALITY_TABLE")
+
+	userRepo := repository.NewUserRepository(db, usersTable)
 	authSvc := service.NewAuthService(userRepo, jwtSecret)
 
-	personalityRepo := repository.NewPersonalityRepository(db)
+	personalityRepo := repository.NewPersonalityRepository(db, personalityTable, usersTable)
 	personalitySvc := service.NewPersonalityService(personalityRepo)
 	if err := personalitySvc.SeedIfEmpty(ctx); err != nil {
 		log.Fatalf("failed to seed personality questions: %v", err)
 	}
 
-	decisionRepo := repository.NewDecisionRepository(db)
+	decisionRepo := repository.NewDecisionRepository(db, decisionsTable)
 	decisionSvc := service.NewDecisionService(decisionRepo, userRepo, mustEnv("ANTHROPIC_API_KEY"))
 
 	authHandler := handler.NewAuthHandler(authSvc)

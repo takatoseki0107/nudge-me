@@ -11,19 +11,19 @@ import (
 	"github.com/takatoseki0107/nudge-me/backend/internal/model"
 )
 
-const personalityQuestionsTable = "nudge-me-personality-questions"
-
 type PersonalityRepository struct {
-	db *dynamodb.Client
+	db        *dynamodb.Client
+	table     string
+	usersTable string
 }
 
-func NewPersonalityRepository(db *dynamodb.Client) *PersonalityRepository {
-	return &PersonalityRepository{db: db}
+func NewPersonalityRepository(db *dynamodb.Client, table, usersTable string) *PersonalityRepository {
+	return &PersonalityRepository{db: db, table: table, usersTable: usersTable}
 }
 
 func (r *PersonalityRepository) FindAllQuestions(ctx context.Context) ([]model.PersonalityQuestion, error) {
 	out, err := r.db.Scan(ctx, &dynamodb.ScanInput{
-		TableName: aws.String(personalityQuestionsTable),
+		TableName: aws.String(r.table),
 	})
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func (r *PersonalityRepository) FindAllQuestions(ctx context.Context) ([]model.P
 
 func (r *PersonalityRepository) CountQuestions(ctx context.Context) (int64, error) {
 	out, err := r.db.DescribeTable(ctx, &dynamodb.DescribeTableInput{
-		TableName: aws.String(personalityQuestionsTable),
+		TableName: aws.String(r.table),
 	})
 	if err != nil {
 		return 0, err
@@ -56,7 +56,7 @@ func (r *PersonalityRepository) SeedQuestions(ctx context.Context, questions []m
 			return err
 		}
 		_, err = r.db.PutItem(ctx, &dynamodb.PutItemInput{
-			TableName: aws.String(personalityQuestionsTable),
+			TableName: aws.String(r.table),
 			Item:      item,
 		})
 		if err != nil {
@@ -68,7 +68,7 @@ func (r *PersonalityRepository) SeedQuestions(ctx context.Context, questions []m
 
 func (r *PersonalityRepository) UpdatePersonalityType(ctx context.Context, userID, personalityType string) error {
 	_, err := r.db.UpdateItem(ctx, &dynamodb.UpdateItemInput{
-		TableName: aws.String(usersTable),
+		TableName: aws.String(r.usersTable),
 		Key: map[string]types.AttributeValue{
 			"id": &types.AttributeValueMemberS{Value: userID},
 		},

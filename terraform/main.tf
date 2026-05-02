@@ -164,9 +164,12 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      JWT_SECRET        = var.jwt_secret
-      ANTHROPIC_API_KEY = var.anthropic_api_key
-      FRONTEND_URL      = var.frontend_url
+      JWT_SECRET              = var.jwt_secret
+      ANTHROPIC_API_KEY       = var.anthropic_api_key
+      FRONTEND_URL            = var.frontend_url
+      DYNAMO_USERS_TABLE      = aws_dynamodb_table.users.name
+      DYNAMO_DECISIONS_TABLE  = aws_dynamodb_table.decisions.name
+      DYNAMO_PERSONALITY_TABLE = aws_dynamodb_table.personality_questions.name
     }
   }
 
