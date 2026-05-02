@@ -29,7 +29,7 @@ function HistoryCard({
   onRegretUpdate,
 }: {
   decision: Decision;
-  onRegretUpdate: (id: number, regret: boolean) => void;
+  onRegretUpdate: (id: string, regret: boolean) => void;
 }) {
   const [updating, setUpdating] = useState(false);
 
@@ -119,7 +119,7 @@ export default function HistoryPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  function handleRegretUpdate(id: number, regret: boolean) {
+  function handleRegretUpdate(id: string, regret: boolean) {
     setDecisions((prev) => prev.map((d) => (d.id === id ? { ...d, regret } : d)));
   }
 

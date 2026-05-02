@@ -60,7 +60,7 @@ export default function DecisionResultPage() {
 
   useEffect(() => {
     if (!getToken()) { router.push("/login"); return; }
-    Promise.all([getDecision(Number(id)), getMe()])
+    Promise.all([getDecision(id), getMe()])
       .then(([d, u]) => {
         setDecision(d);
         setCharacter(u.ai_character);
