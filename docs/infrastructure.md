@@ -1,295 +1,175 @@
 # インフラ構成 — NudgeMe
 
-## EC2 インスタンス情報
+## 構成概要
 
-| 項目 | 値 |
-|------|-----|
-| インスタンスID | i-0ea38ff687cb35cfc |
-| パブリックIP | 52.193.6.70 |
-| リージョン | ap-northeast-1 (東京) |
-| セキュリティグループ | sg-0e4f96e34e3c7c62b (nudge-me-sg) |
-| キーペア | takatoseki |
-
-SSH接続:
-
-```bash
-ssh -i ~/.ssh/takatoseki.pem ubuntu@52.193.6.70
-```
+| レイヤー | サービス | 詳細 |
+|----------|----------|------|
+| フロントエンド | AWS Amplify | Next.js 15 SSR（WEB_COMPUTE） |
+| バックエンド | AWS Lambda | Go + Echo（algnhsa経由） |
+| API | AWS API Gateway | HTTP API |
+| DB | Amazon DynamoDB | 3テーブル（users / decisions / personality-questions） |
+| インフラ管理 | Terraform | terraform/ ディレクトリで管理 |
 
 ---
 
-## 構成図
+## 本番環境 URL
+
+| リソース | URL / ARN |
+|----------|-----------|
+| フロントエンド（Amplify） | https://main.d2t4un0fj1m2x8.amplifyapp.com |
+| API Gateway エンドポイント | https://40ywx4zpy8.execute-api.ap-northeast-1.amazonaws.com |
+| Lambda 関数 | nudge-me-prod-api |
+| Amplify アプリID | d2t4un0fj1m2x8 |
+
+---
+
+## アーキテクチャ図
 
 ```
-インターネット
+ブラウザ
     │
-    │ HTTP:80 / HTTPS:443 / SSH:22
     ▼
-┌────────────────────────────────────────────┐
-│  AWS EC2 (t2.micro)  ap-northeast-1 (東京) │
-│  Ubuntu 22.04 LTS                          │
-│                                            │
-│  Nginx :80 / :443                          │
-│    ├── /           → Next.js :3000         │
-│    └── /api/v1/*   → Go/Echo :8080         │
-│                                            │
-│  Go/Echo :8080 (systemd管理)               │
-│    └── /opt/nudge-me/data/nudge.db (SQLite)│
-│                                            │
-│  Next.js :3000 (systemd管理)               │
-└────────────────────────────────────────────┘
+AWS Amplify（Next.js 15 SSR / WEB_COMPUTE）
+    │  Next.js rewrites: /api/v1/* → API Gateway
+    ▼
+AWS API Gateway（HTTP API）
+    │
+    ▼
+AWS Lambda（Go + Echo / algnhsa）
+    │
+    ├──→ Amazon DynamoDB（nudge-me-prod-users）
+    ├──→ Amazon DynamoDB（nudge-me-prod-decisions）
+    ├──→ Amazon DynamoDB（nudge-me-prod-personality-questions）
+    │
+    └──→ Anthropic API（claude-haiku-4-5）
 ```
 
 ---
 
-## EC2 インスタンス起動手順
+## DynamoDB テーブル
 
-### 1. インスタンス設定
+| テーブル名 | パーティションキー | 用途 |
+|-----------|------------------|------|
+| nudge-me-prod-users | id (String) | ユーザー情報・性格タイプ |
+| nudge-me-prod-decisions | id (String) | 意思決定履歴 |
+| nudge-me-prod-personality-questions | id (String) | 性格診断問題（固定6問） |
 
-| 項目 | 値 |
-|------|-----|
-| AMI | Ubuntu 22.04 LTS |
-| インスタンスタイプ | t2.micro（無料枠） |
-| ストレージ | 20GB gp3 |
-| セキュリティグループ | SSH(22), HTTP(80), HTTPS(443) |
-| キーペア | 任意の名前で作成・保存 |
+---
 
-### 2. EC2 初期セットアップ
+## Terraform 管理リソース
 
-```bash
-# SSHで接続
-ssh -i ~/.ssh/your-key.pem ubuntu@<EC2_PUBLIC_IP>
+`terraform/` ディレクトリで以下を管理:
 
-# パッケージ更新
-sudo apt update && sudo apt upgrade -y
+- DynamoDB テーブル（3テーブル）
+- Lambda 関数 + IAM ロール
+- API Gateway HTTP API
 
-# Git インストール
-sudo apt install -y git
-
-# アプリディレクトリ作成
-sudo mkdir -p /opt/nudge-me/data
-sudo chown ubuntu:ubuntu /opt/nudge-me
-```
-
-### 3. Node.js のインストール
+### デプロイ手順
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-node -v && npm -v
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+# terraform.tfvars に ANTHROPIC_API_KEY・JWT_SECRET を設定
+
+terraform init
+terraform plan
+terraform apply
 ```
 
-### 4. Go のインストール
+---
+
+## バックエンド（Lambda）ビルド・デプロイ手順
 
 ```bash
-wget https://go.dev/dl/go1.22.0.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.22.0.linux-amd64.tar.gz
-echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-source ~/.bashrc
-go version
+# Linux向けクロスコンパイル → zip
+cd backend
+GOOS=linux GOARCH=amd64 go build -o bootstrap ./lambda/main.go
+zip lambda.zip bootstrap
+
+# Terraform経由でデプロイ（推奨）
+cd ../terraform
+terraform apply -target=aws_lambda_function.api
+
+# または AWS CLI で直接更新
+aws lambda update-function-code \
+  --function-name nudge-me-prod-api \
+  --zip-file fileb://../backend/lambda.zip \
+  --region ap-northeast-1
 ```
 
-### 5. Nginx のインストール
+---
+
+## フロントエンド（Amplify）デプロイ手順
+
+main ブランチへのマージで自動デプロイ。
+
+手動でデプロイする場合:
 
 ```bash
-sudo apt install -y nginx
-sudo systemctl enable nginx
-sudo systemctl start nginx
+aws amplify start-job \
+  --app-id d2t4un0fj1m2x8 \
+  --branch-name main \
+  --job-type RELEASE \
+  --region ap-northeast-1
 ```
 
-### 6. リポジトリのクローン
+### Amplify 環境変数
 
-```bash
-cd /opt/nudge-me
-git clone https://github.com/takatoseki0107/nudge-me.git .
-```
+| 変数名 | 値 |
+|--------|-----|
+| `NEXT_PUBLIC_API_URL` | `https://40ywx4zpy8.execute-api.ap-northeast-1.amazonaws.com` |
 
-### 7. 環境変数の設定
+---
 
-```bash
-cp /opt/nudge-me/backend/.env.example /opt/nudge-me/backend/.env
-nano /opt/nudge-me/backend/.env
-```
+## Lambda 環境変数
 
 | 変数名 | 説明 |
 |--------|------|
-| `PORT` | `8080` 固定 |
-| `JWT_SECRET` | 32文字以上のランダム文字列（`openssl rand -base64 32` で生成） |
-| `DB_PATH` | `/opt/nudge-me/data/nudge.db` |
-| `ANTHROPIC_API_KEY` | Anthropic Console で取得したAPIキー |
-| `FRONTEND_URL` | `http://<EC2_PUBLIC_IP>` または `https://<your-domain>` |
+| `JWT_SECRET` | JWT署名秘密鍵（32文字以上） |
+| `ANTHROPIC_API_KEY` | Claude APIキー |
+| `FRONTEND_URL` | AmplifyのURL（CORS用） |
+| `DYNAMO_USERS_TABLE` | nudge-me-prod-users |
+| `DYNAMO_DECISIONS_TABLE` | nudge-me-prod-decisions |
+| `DYNAMO_PERSONALITY_TABLE` | nudge-me-prod-personality-questions |
 
-### 8. デプロイ手順
+---
 
-バックエンドはローカルでクロスコンパイルし、SCPで転送します。フロントエンドはEC2上でビルドします。
+## ローカル開発手順
 
-#### バックエンド（クロスコンパイル → SCP転送）
-
-ローカルマシンで実行:
+### バックエンド
 
 ```bash
-# Linux/amd64 向けにクロスコンパイル
 cd backend
-GOOS=linux GOARCH=amd64 go build -o nudge-me-server main.go
-
-# EC2へバイナリを転送
-scp -i ~/.ssh/takatoseki.pem nudge-me-server ubuntu@52.193.6.70:/opt/nudge-me/backend/nudge-me-server
-
-# バックエンドサービスを再起動
-ssh -i ~/.ssh/takatoseki.pem ubuntu@52.193.6.70 "sudo systemctl restart nudge-me-backend"
+cp .env.example .env
+# .env に各値を設定（DBはローカルDynamoDB or 本番DynamoDBを使用）
+go run main.go
 ```
 
-#### フロントエンド（EC2上でビルド）
+`http://localhost:8080` で起動。
 
-EC2上で実行:
+### フロントエンド
 
 ```bash
-cd /opt/nudge-me/frontend
-git pull origin main
+cd frontend
 npm install
-npm run build
-# standaloneモードでは静的ファイルを手動コピーする必要がある
-cp -r .next/static .next/standalone/.next/static
-sudo systemctl restart nudge-me-frontend
+cp .env.example .env.local
+# .env.local に NEXT_PUBLIC_API_URL=http://localhost:8080 を設定
+npm run dev
 ```
+
+`http://localhost:3000` で起動。
 
 ---
 
-## Nginx 設定
-
-`/etc/nginx/sites-available/nudge-me`:
-
-```nginx
-server {
-    listen 80;
-    server_name _;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    location /api/v1/ {
-        proxy_pass http://localhost:8080;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-```
-
-有効化:
+## 運用コマンド
 
 ```bash
-sudo ln -sf /etc/nginx/sites-available/nudge-me /etc/nginx/sites-enabled/nudge-me
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo nginx -t && sudo systemctl reload nginx
-```
+# Amplifyデプロイ状況確認
+aws amplify list-jobs --app-id d2t4un0fj1m2x8 --branch-name main --region ap-northeast-1
 
----
+# Lambda関数のログ確認
+aws logs tail /aws/lambda/nudge-me-prod-api --follow --region ap-northeast-1
 
-## systemd サービス設定
-
-### バックエンド (`/etc/systemd/system/nudge-me-backend.service`)
-
-```ini
-[Unit]
-Description=NudgeMe Backend (Go/Echo)
-After=network.target
-
-[Service]
-Type=simple
-User=ubuntu
-WorkingDirectory=/opt/nudge-me/backend
-EnvironmentFile=/opt/nudge-me/backend/.env
-ExecStart=/opt/nudge-me/backend/nudge-me-server
-Restart=always
-RestartSec=5
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-```
-
-### フロントエンド (`/etc/systemd/system/nudge-me-frontend.service`)
-
-```ini
-[Unit]
-Description=NudgeMe Frontend (Next.js)
-After=network.target nudge-me-backend.service
-
-[Service]
-Type=simple
-User=ubuntu
-WorkingDirectory=/opt/nudge-me/frontend
-Environment=NODE_ENV=production
-Environment=PORT=3000
-Environment=NEXT_PUBLIC_API_URL=http://localhost:8080
-ExecStart=/usr/bin/node /opt/nudge-me/frontend/.next/standalone/server.js
-Restart=always
-RestartSec=5
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-```
-
-ログ確認:
-
-```bash
-sudo journalctl -u nudge-me-backend -f
-sudo journalctl -u nudge-me-frontend -f
-```
-
----
-
-## HTTPS 対応 (Let's Encrypt)
-
-ドメイン取得後:
-
-```bash
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d your-domain.com
-sudo systemctl reload nginx
-```
-
----
-
-## SQLite バックアップ
-
-```bash
-# crontab -e で追加（毎日 3:00 AM）
-0 3 * * * aws s3 cp /opt/nudge-me/data/nudge.db s3://your-bucket/backups/nudge-$(date +\%Y\%m\%d).db
-```
-
----
-
-## 運用コマンド集
-
-```bash
-# サービス再起動
-sudo systemctl restart nudge-me-backend
-sudo systemctl restart nudge-me-frontend
-
-# ステータス確認
-sudo systemctl status nudge-me-backend
-sudo systemctl status nudge-me-frontend
-
-# バックエンド更新（ローカルから）
-cd backend
-GOOS=linux GOARCH=amd64 go build -o nudge-me-server main.go
-scp -i ~/.ssh/takatoseki.pem nudge-me-server ubuntu@52.193.6.70:/opt/nudge-me/backend/nudge-me-server
-ssh -i ~/.ssh/takatoseki.pem ubuntu@52.193.6.70 "sudo systemctl restart nudge-me-backend"
-
-# フロントエンド更新（EC2上で）
-cd /opt/nudge-me/frontend && git pull origin main && npm install && npm run build && cp -r .next/static .next/standalone/.next/static && sudo systemctl restart nudge-me-frontend
+# DynamoDBテーブルのアイテム数確認
+aws dynamodb scan --table-name nudge-me-prod-users --select COUNT --region ap-northeast-1
 ```
