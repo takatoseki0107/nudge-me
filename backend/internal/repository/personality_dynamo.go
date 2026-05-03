@@ -37,13 +37,14 @@ func (r *PersonalityRepository) FindAllQuestions(ctx context.Context) ([]model.P
 }
 
 func (r *PersonalityRepository) CountQuestions(ctx context.Context) (int64, error) {
-	out, err := r.db.DescribeTable(ctx, &dynamodb.DescribeTableInput{
+	out, err := r.db.Scan(ctx, &dynamodb.ScanInput{
 		TableName: aws.String(r.table),
+		Select:    types.SelectCount,
 	})
 	if err != nil {
 		return 0, err
 	}
-	return *out.Table.ItemCount, nil
+	return int64(out.Count), nil
 }
 
 func (r *PersonalityRepository) SeedQuestions(ctx context.Context, questions []model.PersonalityQuestion) error {
