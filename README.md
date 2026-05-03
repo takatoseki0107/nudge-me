@@ -43,27 +43,31 @@ AI キャラクターが背中を押してくれます。
 
 | レイヤー | 技術 |
 |----------|------|
-| バックエンド | Go 1.22+ / Echo v4 |
-| フロントエンド | Next.js 15 / TypeScript / Tailwind CSS v4 |
-| DB | SQLite（GORM） |
+| バックエンド | Go 1.22+ / Echo v4 / AWS Lambda |
+| フロントエンド | Next.js 15 / TypeScript / Tailwind CSS v4 / AWS Amplify |
+| DB | Amazon DynamoDB |
 | AI | Claude API（claude-haiku-4-5） |
 | 認証 | JWT（HS256） |
-| インフラ | AWS EC2 + Nginx + systemd |
+| インフラ | AWS Lambda + API Gateway + Amplify / Terraform |
 
 ---
 
 ## アーキテクチャ
 
 ```
-ブラウザ (Next.js App Router :3000)
-    │  /api/v1/* → Next.js rewrites → localhost:8080
+ブラウザ
+    │
     ▼
-バックエンド (Go + Echo :8080)
-    │  GORM
+AWS Amplify（Next.js 15 SSR）
+    │  /api/v1/* → Next.js rewrites → API Gateway
     ▼
-SQLite (nudge.db)
-
-バックエンド ──────────────────→ Anthropic API (claude-haiku-4-5)
+AWS API Gateway（HTTP API）
+    │
+    ▼
+AWS Lambda（Go + Echo）
+    │
+    ├──→ Amazon DynamoDB（users / decisions / personality-questions）
+    └──→ Anthropic API（claude-haiku-4-5）
 ```
 
 ---
@@ -75,13 +79,15 @@ SQLite (nudge.db)
 - Go 1.22 以上
 - Node.js 20 以上
 - Anthropic API キー
+- AWS CLI（本番デプロイ時）
+- Terraform（インフラ構築時）
 
-### 1. バックエンド起動
+### 1. バックエンド起動（ローカル）
 
 ```bash
 cd backend
 cp .env.example .env
-# .env を編集して ANTHROPIC_API_KEY と JWT_SECRET を設定
+# .env を編集して ANTHROPIC_API_KEY・JWT_SECRET・DynamoDB設定を記入
 go mod tidy
 go run main.go
 ```
@@ -91,24 +97,36 @@ go run main.go
 ```bash
 cd frontend
 npm install
+cp .env.example .env.local
+# .env.local に NEXT_PUBLIC_API_URL=http://localhost:8080 を設定
 npm run dev
 ```
 
 ブラウザで `http://localhost:3000` を開く。
 
+### 3. 本番インフラ構築（Terraform）
+
+```bash
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+# terraform.tfvars に ANTHROPIC_API_KEY・JWT_SECRET を設定
+terraform init
+terraform apply
+```
+
 ---
 
 ## 本番環境
 
-**URL:** http://52.193.6.70
+**URL:** https://main.d2t4un0fj1m2x8.amplifyapp.com
 
 | ページ | URL |
 |--------|-----|
-| ランディング | http://52.193.6.70/ |
-| 新規登録 | http://52.193.6.70/register |
-| ログイン | http://52.193.6.70/login |
-| ダッシュボード | http://52.193.6.70/dashboard |
-| 決断履歴 | http://52.193.6.70/history |
+| ランディング | https://main.d2t4un0fj1m2x8.amplifyapp.com/ |
+| 新規登録 | https://main.d2t4un0fj1m2x8.amplifyapp.com/register |
+| ログイン | https://main.d2t4un0fj1m2x8.amplifyapp.com/login |
+| ダッシュボード | https://main.d2t4un0fj1m2x8.amplifyapp.com/dashboard |
+| 決断履歴 | https://main.d2t4un0fj1m2x8.amplifyapp.com/history |
 
 ---
 

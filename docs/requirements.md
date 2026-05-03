@@ -58,7 +58,8 @@ AIキャラクター一覧:
 - NFR-02: APIレスポンスタイムは通常3秒以内（AI応答は除く）
 - NFR-03: TypeScript strict モードを有効化する
 - NFR-04: CORS設定でフロントエンドオリジンのみを許可する
-- NFR-05: SQLite の書き込み競合防止（MaxOpenConns=1 または WAL モード）
+- NFR-05: DynamoDB へのアクセスは IAM ロール経由で行い、アクセスキーをコードに埋め込まない
+- NFR-06: Terraform で AWS リソースをコードとして管理する
 
 ---
 
